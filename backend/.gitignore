@@ -1,0 +1,77 @@
+__pycache__/
+*.pyc
+.DS_Store
+*.swp
+.env
+.venv
+venv/
+env/
+local_settings.py
+db.sqlite3
+media/
+static/
+.pytest_cache/
+htmlcov/
+.coverage
+instance/
+*.log
+*.bak
+*.orig
+*~
+__pycache__/*
+.vscode/  # If you use VS Code
+.idea/    # If you use IntelliJ IDEA/PyCharm
+
+# Django specific
+*.mo  # Compiled translation files
+*.pot # Translation template files
+
+# For deployment (adjust as needed)
+# These might be in your production environment, so be careful!
+# /static/  # If you serve static files directly from your project
+# /media/   # If you serve media files directly from your project
+
+# Things that should not be committed
+.secrets/  # Or any directory containing sensitive information
+my_secret_key.txt  # Example, never commit secret keys!
+
+# OS-specific files
+.Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Packages distribution
+dist/
+build/
+*.egg
+
+# Editor and IDE files (customize as needed)
+.idea/*
+.vscode/*
+*.sublime-project
+*.sublime-workspace
+
+# Logs and data files (customize as needed)
+*.log
+*.db
+*.sql
+*.data
+
+# Temporary files
+*~
+*.tmp
+*.temp
+
+# Python virtual environment
+.venv
+venv
+
+# Things you might want to keep in your repo, but not track changes
+# (use --assume-unchanged if needed after adding them).
+# Example:
+# my_local_config.py  #If it differs on each machine
+
+
+# Add any other files or directories that you don't want to track
+# For example, if you have a directory for temporary test files:
+# test_files/
