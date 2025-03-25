@@ -1,4 +1,5 @@
 import cv2
+import os
 import numpy as np
 import mediapipe as mp
 from ultralytics import YOLO
@@ -7,7 +8,9 @@ from collections import defaultdict
 
 # Load YOLO and LRCN model
 yolo_model = YOLO("yolo11n.pt")  # Replace with your YOLO model
-pose_model = load_model("without_sleeping.h5")  
+os.chdir('weights')
+pose_model = load_model("actionIncludingSleeping.h5")  #
+os.chdir('..')
 
 # Initialize MediaPipe Pose
 mp_pose = mp.solutions.pose
@@ -69,6 +72,7 @@ SEQUENCE_LENGTH = 30
 FRAME_SIZE = (255, 255)
 UNKNOWN_ACTIVITY = 5
 FRAME_INTERVAL = 6  # Process every 6th frame for video files
+MODEL_CALL_INTERVAL = 1
 
 # Tracking data for students
 student_sequences = defaultdict(lambda: [])
@@ -91,18 +95,12 @@ def run_multi_student_inference(video_path=None):
             ret, frame = cap.read()
             if not ret:
                 break
-            
-            print(frame_count)
-            # Process frames at intervals if video file
-            if frame_count % FRAME_INTERVAL != 0:
-                frame_count += 1
-                print("continue")
-                continue
 
-            print("after_continue",frame_count)
+            # if frame_count % FRAME_INTERVAL != 0:
+            #     frame_count += 1
+            #     continue
 
-            # YOLO Detection
-            results = yolo_model.track(frame, persist=True, classes=[0])  # Detect only humans
+            results = yolo_model.track(frame, persist=True, classes=[0])  
             detections = results[0].boxes.data.cpu().numpy() if results[0].boxes else []
 
             for box in detections:
@@ -110,43 +108,30 @@ def run_multi_student_inference(video_path=None):
                 roi = frame[y1:y2, x1:x2]
                 roi = cv2.resize(roi, FRAME_SIZE)
 
-                ####################################################################################
+                # Process with Mediapipe
                 image, mediapip_results = mediapipe_detection(roi, holistic)
-                # draw_landmarks(frame, mediapip_results)
-
-
-                #Prediction Logic
                 keypoints = extract_keypoints(mediapip_results)
                 student_sequences[track_id].append(keypoints)
 
                 if len(student_sequences[track_id]) > SEQUENCE_LENGTH:
-                    student_sequences[track_id] = student_sequences[track_id][15:]  # Removes first 15 elements
+                    student_sequences[track_id] = student_sequences[track_id][MODEL_CALL_INTERVAL:]
 
-                
                 if len(student_sequences[track_id]) == SEQUENCE_LENGTH:
-                    predicted_label_idx = predict_posture(np.array(student_sequences[track_id]))
-                    student_activities[track_id] = predicted_label_idx
-                else:
-                    
-                    
-                    student_activities[track_id] = UNKNOWN_ACTIVITY
+                    predictions = [predict_posture(np.array(student_sequences[track_id][i:])) for i in range(-10, 0)]
+                    most_common_action = max(set(predictions), key=predictions.count)
+                    student_activities[track_id] = most_common_action  
                 
-                # Draw bounding box & label
-                
+                # Display last known action
                 activity_label = actions[student_activities.get(track_id, UNKNOWN_ACTIVITY)]
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, f"Posture: {activity_label}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                
-                # if pose_landmarks:
-                #     mp_drawing.draw_landmarks(frame, pose_landmarks, mp_pose.POSE_CONNECTIONS)
-            
+                cv2.putText(frame, f"{track_id} Posture: {activity_label}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
             cv2.imshow("ClassVision - Multi-Student Pose Detection", frame)
             frame_count += 1
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-        cap.release()
-        cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
 
-# Run multi-student inference
 run_multi_student_inference()
