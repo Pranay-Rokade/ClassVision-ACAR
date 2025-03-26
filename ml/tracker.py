@@ -85,8 +85,13 @@ def expand_bbox(x1, y1, x2, y2, scale=1.2):
     return new_x1, new_y1, new_x2, new_y2
 
 
+sequence = []
+sentence = []
+threshold = 0.4
 cap = cv2.VideoCapture(0)
-with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+# prev_results = {}
+
+with mp_holistic.Holistic(min_detection_confidence=0.3, min_tracking_confidence=0.3, static_image_mode = False) as holistic:
     while cap.isOpened():
         _, frame = cap.read()
         results = yolo(frame)
@@ -110,7 +115,7 @@ with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=
                     person_crop_resized = cv2.resize(person_crop, (600, 600))  # Resize to your model's input size
                     image, results = mediapipe_detection(person_crop_resized, holistic)
                     draw_landmarks(person_crop_resized, results)
-        #Prediction Logic
+                    #Prediction Logic
                     keypoints = extract_keypoints(results)
                     sequence.append(keypoints)
                     sequence = sequence[-30:]
@@ -127,9 +132,14 @@ with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=
 
                         # Display predicted action with the highest probability
                         predicted_action = actions[np.argmax(res)]
+                        # prev_results[track_id] = predicted_action
                         cv2.putText(person_crop_resized, f"Pred: {predicted_action}", (10, 30),
                         cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
                     cv2.imshow('OpenCV Feed', person_crop_resized)
+
+
+        # cv2.imshow('OpenCV Feed', frame)
+
         if(cv2.waitKey(10) & 0xFF == ord('q')):
             break
 cap.release()
