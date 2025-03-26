@@ -7,6 +7,7 @@ import mediapipe as mp
 from tensorflow.keras.models import load_model
 from collections import deque
 import threading
+import os
 
 yolo = YOLO("yolov8n.pt")
 
@@ -17,12 +18,15 @@ mp_face = mp.solutions.face_mesh
 
 frame_width, frame_height = 255, 255
 actions = np.array([
-'Eating_in_classroom' ,
-'HandRaise' ,
-'Reading_Book' ,
-'Sitting_on_Desk' ,
-'Sleeping',
-'Writting_on_Textbook'
+# 'Eating_in_classroom' ,
+# 'HandRaise' ,
+# 'Reading_Book' ,
+# 'Sitting_on_Desk' ,
+# 'Sleeping',
+# 'Writting_on_Textbook'
+    "Writing on Board",
+    "Using Mobile Phone",
+    "Explaining the Subject"
 ])
 no_sequences=30
 sequence_length = 30
@@ -82,7 +86,9 @@ def expand_bbox(x1, y1, x2, y2, scale=1.2):
 
 label_map = {label:num for num, label in enumerate(actions)}
 
-model = load_model('actionsIncludingSleeping.h5')
+os.chdir("weights")
+model = load_model('teachers.h5')
+os.chdir("..")
 
 def resize_and_pad(image, target_size=(255, 255)):
     """Resize image while keeping aspect ratio with padding."""
