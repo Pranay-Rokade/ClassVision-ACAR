@@ -7,11 +7,13 @@ from collections import deque
 from tensorflow.keras.models import load_model
 import time
 import torch
+from collections import defaultdict
+
 
 # Load Models
 os.chdir('weights')
 model = load_model("actionsIncludingSleeping.h5")
-yolo = YOLO("yolo11n.pt").to("cuda" if torch.cuda.is_available() else "cpu")
+yolo_model = YOLO("yolo11n.pt").to("cuda" if torch.cuda.is_available() else "cpu")
 os.chdir('..')
 
 
@@ -21,14 +23,25 @@ mp_drawing = mp.solutions.drawing_utils
 
 # Class Labels
 actions = ['Eating in Classroom', 'Hand Raise', 'Reading Book', 'Sitting on Desk', 'Sleeping', 'Writing in Textbook', "Using Phone"]
+
+DISTRACTED_ACTIONS = ['Eating in Classroom', 'Sleeping', 'Using Phone']
+PRODUCTIVE_ACTIONS = ['Hand Raise', 'Reading Book', 'Sitting on Desk', 'Writing in Textbook']
+
 label_map = {action: i for i, action in enumerate(actions)}
 
-# History and Constants
+# dictionaries and Constants
 bbox_history = {}
 sequence_data = {}
+sequence = []
+student_sequences = defaultdict(lambda: [])
+last_action = {}
+
 SEQUENCE_LENGTH = 30
 MODEL_CALL_INTERVAL = 1
 FRAME_INTERVAL = 0
+THRESHOLD = 0.10
+
+
 
 
 ### ----- HELPER FUNCTIONS ----- ###
@@ -88,3 +101,134 @@ def get_center(box):
 
 ### ----- VIDEO PROCESSING ----- ###
 
+
+
+
+def run_multiple_inference(video_path=None):
+    cap = cv2.VideoCapture(0 if video_path is None else video_path)
+    frame_count = 0
+
+    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                break
+
+            # if frame_count % FRAME_INTERVAL != 0:
+            #     frame_count += 1
+            #     continue
+
+            detected_obejets = yolo_model.track(frame, persist=True, classes=[0, 67])  # Detect only humans and phones
+            # detections = results[0].boxes.data.cpu().numpy() if results[0].boxes is not None else []
+
+            phones = []
+            persons = {}
+            person_ids_using_phone = []
+
+            for obj in detected_obejets:
+                if obj.boxes.id is None:  # Skip if no tracking ID assigned
+                    continue
+                for box, cls, track_id in zip(obj.boxes.xyxy.cpu().numpy(), obj.boxes.cls.cpu().numpy(), obj.boxes.id):
+                    if int(cls) == 67:  # 'cell phone'
+                        phones.append(box)
+                    elif int(cls) == 0 and track_id is not None:  # 'person' with ID
+                        persons[int(track_id)] = box
+
+            if phones and persons:
+                for phone in phones:
+                    phone_center = get_center(phone)
+                    min_distance = float('inf')
+                    closest_person_id = None
+
+                    for person_id, person_box in persons.items():
+                        person_center = get_center(person_box)
+                        distance = abs(phone_center[0] - person_center[0]) + abs(phone_center[1] - person_center[1])
+
+                        if distance < min_distance:
+                            min_distance = distance
+                            closest_person_id = person_id
+                    
+                    if closest_person_id is not None:
+                        person_ids_using_phone.append(closest_person_id)
+                        x1, y1, x2, y2 = map(int, persons[closest_person_id])
+
+                        # Draw bounding box only around phone user
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                        cv2.putText(frame, f"Using Phone (ID {closest_person_id})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                        x1, y1, x2, y2 = map(int, phone)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+            
+            
+            for track, person in persons.items():
+                # if person is identified as using phone then skip
+                if track in person_ids_using_phone:
+                    continue
+
+                # track id and area extraction of each person
+                track_id = track
+                x1, y1, x2, y2 = map(int, person)
+                h, w, _ = frame.shape
+                x1, y1, x2, y2 = max(0, x1), max(0, y1), min(w, x2), min(h, y2)
+
+                # cropped area normalizaion of each person
+                x1, y1, x2, y2 = smooth_bbox(track_id, (x1, y1, x2, y2))
+                x1, y1, x2, y2 = expand_bbox(x1, y1, x2, y2, frame, scale=1.2)
+
+                # region of interest of each person
+                roi = frame[y1:y2, x1:x2]
+                if roi is None or roi.size == 0 or roi.shape[0] == 0 or roi.shape[1] == 0:
+                        continue
+                person_crop_resized = cv2.resize(roi, (224, 224))  
+
+                # keypoints extraction of each cropped person
+                image, results = mediapipe_detection(person_crop_resized, holistic)
+                # draw_landmarks(person_crop_resized, results)
+                keypoints = extract_keypoints(results)
+
+                # to keep track of each person's keypoints and predictions
+                student_sequences[track_id].append(keypoints)
+                predictions = {}
+                predicted_action = "Sitting on Desk"
+
+                if track_id not in sequence_data:
+                    sequence_data[track_id] = []
+                sequence_data[track_id].append(keypoints)
+                # sequence_data[track_id] = sequence_data[track_id][-SEQUENCE_LENGTH:]
+
+                if len(sequence_data[track_id]) > SEQUENCE_LENGTH:
+                    sequence_data[track_id] = sequence_data[track_id][MODEL_CALL_INTERVAL:]  # Remove first MODEO_CALL_INTERVAL frames
+
+                if len(sequence_data[track_id]) == SEQUENCE_LENGTH:
+                    res = model.predict(np.expand_dims(sequence_data[track_id], axis=0))
+                    res = np.squeeze(res)
+                    predicted_action = actions[np.argmax(res)]
+                    confidence = res[np.argmax(res)]
+
+                    if confidence > THRESHOLD:  # Confidence threshold
+                        last_action[track_id] = predicted_action  # Store last detected action
+                    else:
+                        last_action[track_id] = "Sitting on Desk"
+
+                if predicted_action in PRODUCTIVE_ACTIONS:
+                    # Draw bounding box and show last detected action (avoids flickering)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    # action_text = last_action.get(track_id, "Sitting on Desk")
+                    cv2.putText(frame, predicted_action, (x1 + 10, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                else :
+                    # Draw bounding box and show last detected action (avoids flickering)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    # action_text = last_action.get(track_id, "Sitting on Desk")
+                    cv2.putText(frame, predicted_action, (x1 + 10, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+
+                # y_offset = 60
+                # for action, score in predictions.items():
+                #     print(f'{action}: {score:.2f}')
+
+            cv2.imshow('Classroom Monitoring', frame)
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+run_multiple_inference()
