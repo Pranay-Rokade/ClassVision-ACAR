@@ -25,8 +25,10 @@ const Hero = () => {
       <div className="container relative" ref={parallaxRef}>
         <div className="relative z-1 max-w-[62rem] mx-auto text-center mb-[3.875rem] md:mb-20 lg:mb-[6.25rem]">
           <h1 className="h1 mb-6">
-            Explore the Advanced Classroom Activitiy Recognition with Classvision {` `}
-            <span className="inline-block relative">
+            Explore the Advanced Classroom Activitiy Recognition with{` `}
+          </h1>
+          <h1 className="h1 mt-[-18px] mb-6">
+          <span className="inline-block relative">
               ClassVision{" "}
               <img
                 src={curve}

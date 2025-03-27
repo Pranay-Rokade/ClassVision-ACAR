@@ -72,7 +72,7 @@ const Header = () => {
         </Link>
         <Link to="/login">
           <Button className="hidden lg:flex">
-            Sign in
+            Log in
           </Button>
         </Link>
 
