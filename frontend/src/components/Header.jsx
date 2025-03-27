@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { disablePageScroll, enablePageScroll } from "scroll-lock";
-
+import { Link } from 'react-router-dom'
 import { cvacar } from "../assets";
 import { navigation } from "../constants";
 import Button from "./Button";
@@ -67,15 +67,14 @@ const Header = () => {
           <HamburgerMenu />
         </nav>
 
-        <a
-          href="#signup"
-          className="button hidden mr-8 text-n-1/50 transition-colors hover:text-n-1 lg:block"
-        >
+        <Link to="/signup" className="button hidden mr-8 text-n-1/50 transition-colors hover:text-n-1 lg:block">
           New account
-        </a>
-        <Button className="hidden lg:flex" href="#login">
-          Sign in
-        </Button>
+        </Link>
+        <Link to="/login">
+          <Button className="hidden lg:flex">
+            Sign in
+          </Button>
+        </Link>
 
         <Button
           className="ml-auto lg:hidden"

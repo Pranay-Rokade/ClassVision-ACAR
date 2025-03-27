@@ -8,7 +8,7 @@ import loading from "./loading.png";
 import yourlogo from "./yourlogo.svg";
 
 import curve from "./hero/curve.png";
-import robot from "./hero/robot.jpg";
+import student from "./hero/student.jpg";
 import heroBackground from "./hero/hero-background.jpg";
 
 import notification1 from "./notification/image-1.png";
@@ -29,7 +29,7 @@ export {
   plusSquare,
   loading,
   curve,
-  robot,
+  student,
   heroBackground,
   notification1,
   notification2,
