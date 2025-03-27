@@ -6,7 +6,6 @@ import Footer from './components/Footer'
 import Hero from './components/Hero'
 import Login from './components/Login'
 import Signup from './components/Signup' 
-import Benefits from './components/Benefits';
 const App = () => {
 
   return (
@@ -17,6 +16,7 @@ const App = () => {
           <Route path="/" element={<Hero />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/live" element={<Live />} />
         </Routes>
         <Benefits />
         <Footer />
