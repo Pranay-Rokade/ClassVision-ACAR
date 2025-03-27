@@ -1,6 +1,9 @@
 from django.shortcuts import render
 
 # Create your views here.
+from django.shortcuts import render
+
+# Create your views here.
 import os
 import re
 import random
@@ -15,10 +18,10 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from users.models import User
+from authenticate.models import User
 from django.contrib.auth import authenticate, login
 from rest_framework.authtoken.models import Token
-from users.decorators import role_required
+from authenticate.decorators import role_required
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.exceptions import NotFound
 from dotenv import load_dotenv
@@ -48,13 +51,15 @@ def send_otp(username, email, subject, body):
     otp = random.randint(10000, 99999)
 
     # Send OTP to email
-    send_mail(
+    abc = send_mail(
         subject,
         body.format(username , otp, OTP_DURATION),
         settings.DEFAULT_FROM_EMAIL,
         [email],
         fail_silently=False,
     )
+
+    print("send main status: ", abc)
 
     return otp
 
@@ -63,6 +68,7 @@ def send_otp(username, email, subject, body):
 class register(APIView):
     def post(self, request):
         # Validation
+        username = request.data.get('username')
         fullname = request.data.get('fullname')
         phone_number = request.data.get('phone_number')
         email = request.data.get('email')
@@ -71,7 +77,7 @@ class register(APIView):
         role = "user"
         otp_expiry = timezone.now() + datetime.timedelta(minutes=OTP_DURATION)
 
-        if not all([fullname, email, phone_number, password, confirm_password]):
+        if not all([username, fullname, email, phone_number, password, confirm_password]):
             return Response({'error': 'All fields are required.'}, status=400)
 
         if password != confirm_password:
@@ -87,18 +93,19 @@ class register(APIView):
         
 
         # Hash the password
-        hashed_password = make_password(password)
+        # hashed_password = make_password(password)
 
         otp = send_otp(fullname, email, subject_verify_email, body_email_verification_otp)
         # Create a new user instance but do not activate it yet (needs OTP verification)
 
         user = User.objects.create(
+            username=username,
             fullname=fullname,
             phone_number=phone_number,
             email=email,
-            password=hashed_password,
+            password=password,
             role=role,
-            isemailverified=False,  # Set to False until OTP is verified
+            is_email_verified=False,  # Set to False until OTP is verified
             otp=otp,
             otp_expiry=otp_expiry,
         )
@@ -127,11 +134,14 @@ class verify_email(APIView):
                     return Response({'error': 'OTP has expired.'}, status=400)
 
                 # Activate the user account upon successful OTP verification
-                user.isemailverified = True
+                user.is_email_verified = True
                 user.otp = None  # Clear the OTP once verified
+                user.is_active = True
+                token, created = Token.objects.get_or_create(user=user)
                 user.save()
 
-                return Response({'success':'Email is verified.'}, status=200)
+
+                return Response({'success':'Email is verified.','token': token.key}, status=200)
             else:
                 return Response({'message':'OTP is incorrect'},status=status.HTTP_400_BAD_REQUEST)
 
@@ -200,6 +210,7 @@ class CheckTokenValidity(APIView):
 
 class LoginView(APIView):
     def post(self, request):
+        isValidCredentials = False
         email = request.data.get('email')  # Get the email
         password = request.data.get('password')  # Get the password
 
@@ -209,21 +220,28 @@ class LoginView(APIView):
         # Authenticate the user using email and password
         try:
             # Retrieve the user by email
-            from users.models import User  # Adjust import path if needed
+            from authenticate.models import User
+            
             user = User.objects.get(email=email)
 
+            hashed_password = make_password(password)
+            print("user: ", user.email, email, user.password,  password, hashed_password)
             # Use the username for authentication
-            user = authenticate(username=user.username, password=password)
+            if user.email == email and user.password == password:
+                isValidCredentials = True   
+ 
 
-            if user and user.is_active:
+            if user and isValidCredentials and user.is_email_verified:
                 # Generate a token for the authenticated user
                 token, created = Token.objects.get_or_create(user=user)
-                user.otp = send_otp(user.username, email, subject_login, body_login_otp)
-                user.otp_expiry = timezone.now() + datetime.timedelta(minutes=OTP_DURATION)
+                user.is_active = True
                 user.save()
+                # user.otp = send_otp(user.username, email, subject_login, body_login_otp)
+                # user.otp_expiry = timezone.now() + datetime.timedelta(minutes=OTP_DURATION)
+                # user.save()
 
-                user_roles = user.user_roles
-                return Response({'token': token.key, 'message': 'Login successful. Login OTP sent.', 'username':user.username,'phone_number':user.phone_number, 'role':user.role, 'user_roles':user_roles}, status=200)
+                # user_roles = user.user_roles
+                return Response({'token': token.key, 'message': 'Login successful. Login OTP sent.', 'username':user.username,'phone_number':user.phone_number, 'role':user.role}, status=200)
 
             return Response({'error': 'Invalid credentials or email not verified.'}, status=401)
 
@@ -235,12 +253,13 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
+    # permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
 
     def post(self, request):
         try:
             # Get the token associated with the authenticated user
-            user = request.user
+            email = request.data.get('email')
+            user = User.objects.get(email=email)
             token = Token.objects.get(user=user)
 
             # delete their reports from file directory once the user logs out
@@ -259,6 +278,8 @@ class LogoutView(APIView):
                             print(f"Skipped (not a file): {file_path}")
 
             if token:
+                user.is_active = False
+                user.save()
                 token.delete()
                 return Response({'message': 'Successfully logged out and token destroyed.'}, status=200)
 
