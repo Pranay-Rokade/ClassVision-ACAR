@@ -49,6 +49,7 @@ INSTALLED_APPS = [
 
     # Local Apps
     'authenticate',
+    'classification',
 
     # Third Party Apps
     'rest_framework',
@@ -61,6 +62,12 @@ INSTALLED_APPS = [
 # ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+]
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -151,8 +158,10 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
+# Custom User Model
 AUTH_USER_MODEL = 'authenticate.User'
+
+# Email Configuration Constants
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -160,3 +169,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ["EMAIL_ID"] # email address
 EMAIL_HOST_PASSWORD = os.environ["EMAIL_PASS"] # password
 DEFAULT_FROM_EMAIL = os.environ["EMAIL_ID"]
+
+# directory for uploaded and processed files
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
