@@ -22,23 +22,23 @@ import {
     {
       id: "0",
       title: "Features",
-      url: "#features",
+      url: "/#features",
     },
     {
       id: "1",
       title: "How to use",
-      url: "#how-to-use",
+      url: "/#how-to-use",
     },
     {
       id: "2",
       title: "New account",
-      url: "#signup",
+      url: "/signup",
       onlyMobile: true,
     },
     {
       id: "3",
       title: "Sign in",
-      url: "#login",
+      url: "/login",
       onlyMobile: true,
     },
   ];
