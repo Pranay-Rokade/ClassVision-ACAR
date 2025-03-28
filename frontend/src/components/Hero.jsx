@@ -10,6 +10,7 @@ import Generating from "./Generating";
 import Notification from "./Notification";
 import CompanyLogos from "./CompanyLogos";
 import { Link } from 'react-router-dom' 
+import Benefits from "./Benefits";
 
 const Hero = () => {
   const parallaxRef = useRef(null);
@@ -103,6 +104,7 @@ const Hero = () => {
       </div>
 
       <BottomLine />
+      <Benefits/>
     </Section>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Button from './Button'; // Assuming you have a Button component
 
 const LiveMonitoring = () => {
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -8,17 +9,17 @@ const LiveMonitoring = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen w-full bg-gray-950 pt-[4.75rem] lg:pt-[5.25rem] px-4">
+    <div className="flex justify-center items-center w-full bg-gray-950 pt-[4.75rem] lg:pt-[5.25rem] px-4 mt-[-40px]">
       <div className="w-full max-w-[1600px]"> {/* Increased max-width */}
         <div className="w-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-2">
           <div className="border-8 border-transparent rounded-2xl bg-gray-900 shadow-2xl p-6">
-            <div className="flex gap-6">
+            <div className="flex gap-6 h-[475px]">
               {/* Video Feed Section - 80% width */}
               <div className="w-[80%]">
                 <h2 className="text-3xl font-bold text-gray-300 mb-4">
                   Live Monitoring Feed
                 </h2>
-                <div className="w-full aspect-video bg-gray-800 rounded-xl flex items-center justify-center">
+                <div className="w-full aspect-video bg-gray-800 rounded-xl flex items-center justify-center h-[430px] overflow-auto">
                   {isMonitoring ? (
                     <div className="text-center w-full h-full">
                       {/* Laptop Mockup */}
@@ -39,9 +40,9 @@ const LiveMonitoring = () => {
               {/* Activity Log Section - 20% width */}
               <div className="w-[20%]">
                 <h2 className="text-3xl font-bold text-gray-300 mb-4">
-                  Activity Log
+                  Activity
                 </h2>
-                <div className="bg-gray-800 rounded-xl p-4 h-[600px] overflow-auto">
+                <div className="bg-gray-800 rounded-xl p-4 h-[430px] overflow-auto">
                   {isMonitoring ? (
                     <table className="w-full">
                       <thead>
@@ -86,17 +87,12 @@ const LiveMonitoring = () => {
 
             {/* Control Button */}
             <div className="mt-6 flex justify-center">
-              <button 
+              <Button
                 onClick={toggleMonitoring} 
-                className="w-full max-w-md py-3 text-lg 
-                  bg-gradient-to-r from-blue-500 to-purple-600 
-                  text-white rounded-xl 
-                  hover:from-blue-600 hover:to-purple-700 
-                  transition-colors duration-300 
-                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                className="w-full max-w-md py-3 text-lg"
               >
                 {isMonitoring ? 'Stop Monitoring' : 'Start Monitoring'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
