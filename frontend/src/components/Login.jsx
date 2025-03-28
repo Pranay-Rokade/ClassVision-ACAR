@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
 
+import axios from "axios";
+
 const InputField = ({ id, type, placeholder, value, onChange }) => {
     return (
       <div className="relative w-full">
@@ -42,8 +44,24 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    const data = {
+      email: email,
+      password: password,
+    }
+
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/auth/login", data, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("Response:", response);
+    } catch (error) {
+      
+    }
+
     console.log("Email:", email);
     console.log("Password:", password);
   };

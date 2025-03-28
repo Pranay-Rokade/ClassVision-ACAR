@@ -8,6 +8,7 @@ import Login from './components/Login'
 import Signup from './components/Signup' 
 import Benefits from './components/Benefits'
 import Live from './components/Live'
+import VideoStream from './components/Try';
 const App = () => {
 
   return (
@@ -19,6 +20,7 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/live" element={<Live />} />
+          <Route path="/stream" element={<VideoStream />} />
         </Routes>
         <Footer />
       </div>
