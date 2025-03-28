@@ -4,14 +4,16 @@ import Section from "./Section";
 import Arrow from "../assets/svg/Arrow";
 import { GradientLight } from "./design/Benefits";
 import ClipPath from "../assets/svg/ClipPath";
+import Collaboration from "./Collaboration";
 
 const Benefits = () => {
   return (
+    <>
     <Section id="features">
       <div className="container relative z-2">
         <Heading
-          className="md:max-w-md lg:max-w-2xl"
-          title="Recognise Smarter, Not Harder with ClassVision"
+          className="md:max-w-md lg:max-w-3xl"
+          title="Recognize Smarter, Manage Better with ClassVision."
         />
 
         <div className="flex flex-wrap gap-10 mb-10">
@@ -65,6 +67,8 @@ const Benefits = () => {
         </div>
       </div>
     </Section>
+    <Collaboration/>
+    </>
   );
 };
 

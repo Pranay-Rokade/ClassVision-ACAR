@@ -31,7 +31,7 @@ const InputField = ({ id, type, placeholder, value, onChange }) => {
   
           <rect
             x="1" y="1" width="398" height="38" rx="10" ry="10"
-            fill="none" stroke="url(#input-border-small)" strokeWidth="2"
+            fill="none" stroke="url(#input-border-small)" strokeWidth="1"
           />
         </svg>
       </div>
@@ -58,7 +58,7 @@ const Signup = () => {
   return (
     <div className="flex justify-center items-center h-screen w-screen bg-gray-950 mt-[-20px]">
       <div className="w-full max-w-lg">
-        <section id="back-div" className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-2">
+        <section id="back-div" className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-1">
           <div className="border-8 border-transparent rounded-2xl bg-white dark:bg-gray-900 shadow-2xl p-6">
             <h1 className="text-4xl font-bold text-center cursor-default dark:text-gray-300 text-gray-900 mb-4">
               Sign Up

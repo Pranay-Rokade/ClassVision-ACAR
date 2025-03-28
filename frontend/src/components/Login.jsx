@@ -31,7 +31,7 @@ const InputField = ({ id, type, placeholder, value, onChange }) => {
   
           <rect
             x="2" y="2" width="496" height="46" rx="12" ry="12"
-            fill="none" stroke="url(#input-border-large)" strokeWidth="3"
+            fill="none" stroke="url(#input-border-large)" strokeWidth="1"
           />
         </svg>
       </div>
@@ -50,7 +50,7 @@ const Login = () => {
 
   return (
     <div className="flex justify-center items-center h-screen w-full bg-gray-950 mt-[-60px]">
-      <div className="w-full max-w-lg bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-2">
+      <div className="w-full max-w-lg bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-1">
         <div className="border-8 border-transparent rounded-2xl bg-white dark:bg-gray-900 shadow-2xl p-6">
           <h1 className="text-5xl font-bold text-center dark:text-gray-300 text-gray-900 mb-6">
             Log in

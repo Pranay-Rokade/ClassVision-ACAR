@@ -16,6 +16,7 @@ const Hero = () => {
   const parallaxRef = useRef(null);
 
   return (
+    <>
     <Section
       className="pt-[12rem] -mt-[5.25rem]"
       crosses
@@ -41,10 +42,9 @@ const Hero = () => {
             </span>
           </h1>
           <p className="body-1 max-w-3xl mx-auto mb-6 text-n-2 lg:mb-8">
-            Unleash the power of Classroom within Brainwave. Upgrade your productivity
-            with Brainwave, the open AI chat app.
+            Empowering teachers with real-time insights into student activities for enhanced classroom monitoring and engagement with ClassVision.
           </p>
-          <Link to="/login">
+          <Link to="/upload">
           <Button white>
             Get started
           </Button>
@@ -104,8 +104,9 @@ const Hero = () => {
       </div>
 
       <BottomLine />
-      <Benefits/>
     </Section>
+    <Benefits/>
+    </>
   );
 };
 
