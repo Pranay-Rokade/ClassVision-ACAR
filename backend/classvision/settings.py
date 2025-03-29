@@ -171,5 +171,5 @@ EMAIL_HOST_PASSWORD = os.environ["EMAIL_PASS"] # password
 DEFAULT_FROM_EMAIL = os.environ["EMAIL_ID"]
 
 # directory for uploaded and processed files
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

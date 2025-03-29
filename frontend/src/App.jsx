@@ -8,7 +8,6 @@ import Login from './components/Login'
 import Signup from './components/Signup' 
 import Live from './components/Live'
 import Upload from './components/Upload';
-import Upload2 from './components/Try';
 const App = () => {
 
   return (
@@ -21,7 +20,6 @@ const App = () => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/live" element={<Live />} />
           <Route path="/upload" element={<Upload/>} />
-          <Route path="/upload2" element={<Upload2/>} />
         </Routes>
         <Footer />
       </div>
