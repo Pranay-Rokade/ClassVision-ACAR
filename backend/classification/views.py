@@ -7,6 +7,9 @@ from rest_framework.parsers import MultiPartParser, FormParser
 import cv2
 import os
 from django.conf import settings
+import requests
+import time
+import psutil
 
 
 # Create your views here.
@@ -104,26 +107,79 @@ class VideoClassification(APIView):
 
             if not video_file:
                 return Response({"error": "No video file provided"}, status=400)
-
+            
+            print("start")
             # Save the uploaded video temporarily
-            video_path = default_storage.save("temp/" + video_file.name, video_file)
+            video_path = default_storage.save("temp\\" + video_file.name, video_file)
             video_full_path = os.path.join(default_storage.location, video_path)
 
+            print(video_full_path)
             # Process the video
             processed_video_path = process_video(video_full_path)
+            print(processed_video_path)
 
+            extension = os.path.splitext(processed_video_path)[1].lstrip('.')  # Returns '.mp4'
+            print(extension)
+
+
+            headers = {
+                'apy-token': 'APY0ZmjavQ7EvYfE9iBUbPNuXdTvWBtJorUk5qe8kliYm3fIpJrV7CGVWdZdCTzoWW6JNNxguzZi2',
+            }
+
+            params = {
+                'output': 'test-sample',
+            }
+
+            files = {
+                'video': open(processed_video_path, 'rb'),
+                'output_format': (None, extension),
+            }
+
+
+            format_response = requests.post('https://api.apyhub.com/convert/video/file', params=params, headers=headers, files=files)
+
+
+            if format_response.status_code == 200:
+                with open("media/processed_videos/output.mp4", "wb") as f:
+                    f.write(format_response.content)
+                print("Video conversion successful. Saved as output.mp4")
+                f.close()
+            else:
+                print(f"Error: {format_response.status_code} - {response.json().get('message', 'Unknown error')}")
+
+            output_video_path = os.path.join(default_storage.location,"processed_videos", "output.mp4")
             # Send the processed video back to React
-            response = FileResponse(open(processed_video_path, "rb"), content_type="video/mp4", status=200)
+            response = FileResponse(open(output_video_path, "rb"), content_type="video/mp4", status=200)
             response["Content-Disposition"] = f'attachment; filename="processed_video.mp4"'
 
+            print("response")
+            
+            # time.sleep(1)
+            # if not is_file_in_use(processed_video_path):
+            #     os.remove(processed_video_path)
+            #     print("file removed")
+            # else:
+            #     print(f"Skipping deletion: {processed_video_path} is still in use.")
+
             # Clean up temporary files
-            os.remove(video_full_path)
-            os.remove(processed_video_path)
+            # os.remove(video_full_path)
+            # os.remove(processed_video_path)
+            # os.remove(output_video_path)
 
             return response
 
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
+
+def is_file_in_use(file_path):
+    for proc in psutil.process_iter():
+        try:
+            for item in proc.open_files():
+                if file_path in item.path:
+                    return True
+        except Exception:
+            pass
+    return False
 
 
 def process_video(video_path):
@@ -131,7 +187,7 @@ def process_video(video_path):
     cap = cv2.VideoCapture(video_path)
 
     # Define output path for processed video
-    output_path = os.path.join("media/processed_videos", "processed_video.mp4")
+    output_path = os.path.join(default_storage.location,"processed_videos", "processed_video.mp4")
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -153,5 +209,6 @@ def process_video(video_path):
     # Release resources
     cap.release()
     out.release()
+    cv2.destroyAllWindows()
 
     return output_path

@@ -24,9 +24,10 @@ actions = np.array([
 # 'Sitting_on_Desk' ,
 # 'Sleeping',
 # 'Writting_on_Textbook'
+    "Explaining the Subject",
     "Writing on Board",
     "Using Mobile Phone",
-    "Explaining the Subject"
+    
 ])
 no_sequences=30
 sequence_length = 30

@@ -109,17 +109,17 @@ def run_multiple_inference(video_path=None):
     frame_count = 0
 
     output_video = None
-    if video_path is not None:
-        base_name = os.path.basename(video_path)
-        name, ext = os.path.splitext(base_name)
-        output_path = f"{name}_analyzed{ext}"
+    # if video_path is not None:
+    #     base_name = os.path.basename(video_path)
+    #     name, ext = os.path.splitext(base_name)
+    #     output_path = f"{name}_analyzed{ext}"
          
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = cap.get(cv2.CAP_PROP_FPS)
+    #     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    #     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #     fps = cap.get(cv2.CAP_PROP_FPS)
          
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        output_video = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+    #     fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    #     output_video = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         while cap.isOpened():
@@ -249,4 +249,4 @@ def run_multiple_inference(video_path=None):
     cap.release()
     cv2.destroyAllWindows()
 
-run_multiple_inference("test3.mp4")
+run_multiple_inference("https://192.0.0.4:8080/video")
