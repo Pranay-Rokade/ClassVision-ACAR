@@ -68,7 +68,7 @@ const Signup = () => {
   return (
     <div className="flex justify-center items-center mt-10 mb-5 w-screen">
       <div className="w-full max-w-lg">
-        <section id="back-div" className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-1">
+        <section id="back-div" className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-2">
           <div className="border-8 border-transparent rounded-2xl bg-white dark:bg-gray-900 shadow-2xl p-6">
             <h1 className="text-4xl font-bold text-center cursor-default dark:text-gray-300 text-gray-900 mb-4">
               Sign Up

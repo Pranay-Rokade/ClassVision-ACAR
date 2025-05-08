@@ -38,13 +38,18 @@ import {
       url: "/#how-to-use",
     },
     {
-      id: "2",
+      id:"2",
+      title:"Dashboard",
+      url:"/dashboard",
+    },
+    {
+      id: "3",
       title: "New account",
       url: "/signup",
       onlyMobile: true,
     },
     {
-      id: "3",
+      id: "4",
       title: "Sign in",
       url: "/login",
       onlyMobile: true,

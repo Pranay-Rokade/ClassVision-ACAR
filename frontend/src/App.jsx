@@ -8,6 +8,7 @@ import Login from './components/Login'
 import Signup from './components/Signup' 
 import Live from './components/Live'
 import Upload from './components/Upload';
+import Dashboard from './components/Dashboard'
 const App = () => {
 
   return (
@@ -20,6 +21,7 @@ const App = () => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/live" element={<Live />} />
           <Route path="/upload" element={<Upload/>} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
         <Footer />
       </div>

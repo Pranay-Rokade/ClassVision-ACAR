@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Button from './Button';
 
@@ -139,6 +139,15 @@ const Upload2 = () => {
 
     setErrorMessage(null);
   };
+  useEffect(() => {
+      // Prevent scrolling when Login is mounted
+      document.body.classList.add("overflow-hidden");
+    
+      // Cleanup: Re-enable scrolling on unmount
+      return () => {
+        document.body.classList.remove("overflow-hidden");
+      };
+    }, []);
 
   return (
     <div className="flex justify-center items-center w-full pt-[4.75rem] lg:pt-[5.25rem] px-4 mt-[-40px] pb-10 mb-20">
