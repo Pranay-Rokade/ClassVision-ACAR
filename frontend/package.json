@@ -15,6 +15,7 @@
     "react-dom": "^18.3.1",
     "react-just-parallax": "^3.1.16",
     "react-router-dom": "^7.4.0",
+    "react-toastify": "^11.0.5",
     "scroll-lock": "^2.1.5"
   },
   "devDependencies": {

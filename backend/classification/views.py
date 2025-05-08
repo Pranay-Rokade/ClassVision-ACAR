@@ -341,19 +341,14 @@ class upload_video(APIView):
             if not video_file:
                 return Response({"error": "No video file provided"}, status=400)
             
-            print("start")
             # Save the uploaded video temporarily
             video_path = default_storage.save("temp\\" + video_file.name, video_file)
             video_full_path = os.path.join(default_storage.location, video_path)
 
-            print(video_full_path)
             # Process the video
             processed_video_path = process_video(video_full_path)
-            print(processed_video_path)
 
             extension = os.path.splitext(processed_video_path)[1].lstrip('.')  # Returns '.mp4'
-            print(extension)
-
 
             headers = {
                 'apy-token': 'APY0ZmjavQ7EvYfE9iBUbPNuXdTvWBtJorUk5qe8kliYm3fIpJrV7CGVWdZdCTzoWW6JNNxguzZi2',
@@ -374,7 +369,6 @@ class upload_video(APIView):
             if format_response.status_code == 200:
                 with open("media/processed_videos/output.mp4", "wb") as f:
                     f.write(format_response.content)
-                print("Video conversion successful. Saved as output.mp4")
                 f.close()
             else:
                 print(f"Error: {format_response.status_code} - {response.json().get('message', 'Unknown error')}")
@@ -384,7 +378,6 @@ class upload_video(APIView):
             response = FileResponse(open(output_video_path, "rb"), content_type="video/mp4", status=200)
             response["Content-Disposition"] = f'attachment; filename="processed_video.mp4"'
 
-            print("response")
             
             # time.sleep(1)
             # if not is_file_in_use(processed_video_path):
