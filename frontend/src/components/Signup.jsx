@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect,useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
 
@@ -54,9 +54,19 @@ const Signup = () => {
     console.log("Email:", email);
     console.log("Password:", password);
   };
+  useEffect(() => {
+    // Prevent scrolling when Login is mounted
+    document.body.classList.add("overflow-hidden");
+  
+    // Cleanup: Re-enable scrolling on unmount
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, []);
+  
 
   return (
-    <div className="flex justify-center items-center h-screen w-screen bg-gray-950 mt-[-20px]">
+    <div className="flex justify-center items-center mt-10 mb-5 w-screen">
       <div className="w-full max-w-lg">
         <section id="back-div" className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-1">
           <div className="border-8 border-transparent rounded-2xl bg-white dark:bg-gray-900 shadow-2xl p-6">
