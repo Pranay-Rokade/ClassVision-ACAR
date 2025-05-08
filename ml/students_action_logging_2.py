@@ -131,7 +131,8 @@ def run_multiple_inference(video_path=None):
 
     f = open(f"{current_date}_{current_time}.csv", 'w', newline='')
     writer = csv.writer(f)
-
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_index = 0
     # save video only if video_path of video is provided, if webcam or IP is provided then no need to save, just show live
     output_video = None
     if video_path is not None and video_path.endswith(('.mp4', '.avi', '.mov')):
@@ -155,10 +156,23 @@ def run_multiple_inference(video_path=None):
             ret, frame = cap.read()
             if not ret or frame is None:
                 break
-
+            
+            frame_index += 1
             # if frame_count % FRAME_INTERVAL != 0:
             #     frame_count += 1
             #     continue
+
+            # Calculate timestamp in seconds
+            timestamp_sec = frame_index / fps
+
+            # Optionally, convert to HH:MM:SS format
+            hours = int(timestamp_sec // 3600)
+            minutes = int((timestamp_sec % 3600) // 60)
+            seconds = int(timestamp_sec % 60)
+            millis = int((timestamp_sec % 1) * 1000)
+
+            timestamp_str = f"{hours:02}:{minutes:02}:{seconds:02}.{millis:03}"
+            formatted_date = now.strftime("%Y-%m-%d") 
 
             detected_obejets = yolo_model.track(frame, persist=True, classes=[0, 67])  # Detect only humans and phones
 
@@ -193,6 +207,29 @@ def run_multiple_inference(video_path=None):
                         person_ids_using_phone.append(closest_person_id)
                         x1, y1, x2, y2 = map(int, persons[closest_person_id])
 
+                        roi = frame[y1:y2, x1:x2]
+                        if roi is None or roi.size == 0 or roi.shape[0] == 0 or roi.shape[1] == 0:
+                            continue
+                        person_crop_resized = cv2.resize(roi, (RESIZE_WIDTH, RESIZE_HEIGHT))  
+
+                        rgb_small_frame = cv2.cvtColor(person_crop_resized, cv2.COLOR_BGR2RGB)
+                        face_locations = face_recognition.face_locations(rgb_small_frame)
+                        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                        # print(face_encodings)
+                        face_names = []
+                        for face_encoding in face_encodings:
+                            matches = face_recognition.compare_faces(list(encodings.values()), face_encoding)
+                            face_distances = face_recognition.face_distance(list(encodings.values()), face_encoding)
+                            best_match_index = np.argmin(face_distances)
+                            name = "Unknown"
+                            if matches[best_match_index]:
+                                name = list(encodings.keys())[best_match_index]
+                    
+                            if last_action[closest_person_id] != "Using Phone":
+                                print(f"Detected: {name} - Action: {predicted_action}")
+                                writer.writerow([name, "Using Phone", f"{formatted_date} {timestamp_str}"])
+
+                        last_action[closest_person_id] = "Using Phone"  # Store last detected action
                         # Draw bounding box only around phone user
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
                         cv2.putText(frame, f"Using Phone (ID {closest_person_id})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
@@ -241,6 +278,7 @@ def run_multiple_inference(video_path=None):
                 if len(students_sequences[track_id]) > SEQUENCE_LENGTH:
                     students_sequences[track_id] = students_sequences[track_id][MODEL_CALL_INTERVAL:]  # Remove first MODEO_CALL_INTERVAL frames
 
+                last_act = "Sitting on Desk"  # Default action if, predicted action does not exceed threshold
                 if len(students_sequences[track_id]) == SEQUENCE_LENGTH:
                     res = model.predict(np.expand_dims(students_sequences[track_id], axis=0))
                     res = np.squeeze(res)
@@ -266,7 +304,7 @@ def run_multiple_inference(video_path=None):
                 rgb_small_frame = cv2.cvtColor(person_crop_resized, cv2.COLOR_BGR2RGB)
                 face_locations = face_recognition.face_locations(rgb_small_frame)
                 face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-                print(face_encodings)
+                # print(face_encodings)
                 face_names = []
                 for face_encoding in face_encodings:
                     matches = face_recognition.compare_faces(list(encodings.values()), face_encoding)
@@ -278,8 +316,8 @@ def run_multiple_inference(video_path=None):
                     
                     if last_act != predicted_action:
                         print(f"Detected: {name} - Action: {predicted_action}")
-                        writer.writerow([name, predicted_action, datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
-                
+                        writer.writerow([name, "Using Phone", f"{formatted_date} {timestamp_str}"])
+
                 print(f"Detected")
             if output_video is not None:
                  output_video.write(frame)
