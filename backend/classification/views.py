@@ -15,6 +15,8 @@ import mediapipe as mp
 from ultralytics import YOLO
 from collections import deque, defaultdict
 from tensorflow.keras.models import load_model
+import subprocess
+import shutil
 
 
 # Create your views here.
@@ -108,6 +110,18 @@ def is_file_in_use(file_path):
         except Exception:
             pass
     return False
+
+def convert_to_streamable_mp4(input_path, output_path):
+    command = [
+        "ffmpeg",
+        "-y",  # overwrite if exists
+        "-i", input_path,
+        "-vcodec", "libx264",
+        "-acodec", "aac",
+        "-movflags", "+faststart",
+        output_path
+    ]
+    subprocess.run(command, check=True)
 
 def process_video(video_path):
     # Load the video
@@ -341,50 +355,20 @@ class upload_video(APIView):
             if not video_file:
                 return Response({"error": "No video file provided"}, status=400)
             
-            print("start")
             # Save the uploaded video temporarily
             video_path = default_storage.save("temp\\" + video_file.name, video_file)
             video_full_path = os.path.join(default_storage.location, video_path)
 
-            print(video_full_path)
             # Process the video
             processed_video_path = process_video(video_full_path)
-            print(processed_video_path)
 
-            extension = os.path.splitext(processed_video_path)[1].lstrip('.')  # Returns '.mp4'
-            print(extension)
-
-
-            headers = {
-                'apy-token': 'APY0ZmjavQ7EvYfE9iBUbPNuXdTvWBtJorUk5qe8kliYm3fIpJrV7CGVWdZdCTzoWW6JNNxguzZi2',
-            }
-
-            params = {
-                'output': 'test-sample',
-            }
-
-            files = {
-                'video': open(processed_video_path, 'rb'),
-                'output_format': (None, extension),
-            }
-
-            format_response = requests.post('https://api.apyhub.com/convert/video/file', params=params, headers=headers, files=files)
-
-
-            if format_response.status_code == 200:
-                with open("media/processed_videos/output.mp4", "wb") as f:
-                    f.write(format_response.content)
-                print("Video conversion successful. Saved as output.mp4")
-                f.close()
-            else:
-                print(f"Error: {format_response.status_code} - {response.json().get('message', 'Unknown error')}")
+            convert_to_streamable_mp4(processed_video_path, "media/processed_videos/output.mp4")
 
             output_video_path = os.path.join(default_storage.location,"processed_videos", "output.mp4")
             # Send the processed video back to React
             response = FileResponse(open(output_video_path, "rb"), content_type="video/mp4", status=200)
             response["Content-Disposition"] = f'attachment; filename="processed_video.mp4"'
 
-            print("response")
             
             # time.sleep(1)
             # if not is_file_in_use(processed_video_path):

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Button from './Button';
+import { toast } from 'react-toastify';
 
 const Upload2 = () => {
   const [originalVideoFile, setOriginalVideoFile] = useState(null);
@@ -88,7 +89,11 @@ const Upload2 = () => {
       console.log('Processed Video URL:', processedVideoBlob);
 
       // Show success alert
-      alert('Video processed successfully!');
+      // alert('Video processed successfully!');
+      toast.success("successful",{
+        position: toast.POSITION.TOP_RIGHT,
+        autoClose: 500,
+    });
     } catch (error) {
       console.error('Error processing video:', error);
 
