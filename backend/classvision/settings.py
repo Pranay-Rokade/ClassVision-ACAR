@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     # Local Apps
     'authenticate',
     'classification',
+    'analysis',
 
     # Third Party Apps
     'rest_framework',
