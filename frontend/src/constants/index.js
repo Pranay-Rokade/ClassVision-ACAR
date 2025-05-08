@@ -109,7 +109,7 @@ import {
   ];
 
   export const collabText =
-  "With smart automation and high performance, ClassVision is the perfect solution for teachers to monitor classrooms effortlessly.";
+  "Go to Try it Now Upload the Video and start monitoring your classroom. Our model will detect the students' activities and tell you the actions";
 
 export const collabContent = [
   {
