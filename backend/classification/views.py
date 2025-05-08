@@ -4,12 +4,17 @@ from rest_framework.response import Response
 from django.http import StreamingHttpResponse, FileResponse, JsonResponse, HttpResponse
 from django.core.files.storage import default_storage
 from rest_framework.parsers import MultiPartParser, FormParser
-import cv2
-import os
 from django.conf import settings
 import requests
-import time
 import psutil
+import time
+import os
+import cv2
+import numpy as np
+import mediapipe as mp
+from ultralytics import YOLO
+from collections import deque, defaultdict
+from tensorflow.keras.models import load_model
 
 
 # Create your views here.
@@ -17,7 +22,7 @@ VIDEO_URL = None  # Placeholder for the video URL
 
 
 # Receive Video URL Class
-class receive_video_url(APIView):
+class live_video(APIView):
     def post(self, request):  
         try:
             # Get the video URL from the request
@@ -97,7 +102,7 @@ def process_frame(frame):
     return frame
 
 
-class VideoClassification(APIView):
+class upload_video  (APIView):
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -134,7 +139,6 @@ class VideoClassification(APIView):
                 'video': open(processed_video_path, 'rb'),
                 'output_format': (None, extension),
             }
-
 
             format_response = requests.post('https://api.apyhub.com/convert/video/file', params=params, headers=headers, files=files)
 
