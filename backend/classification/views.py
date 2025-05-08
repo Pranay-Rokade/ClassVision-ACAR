@@ -20,6 +20,125 @@ from tensorflow.keras.models import load_model
 # Create your views here.
 VIDEO_URL = None  # Placeholder for the video URL
 
+# mediapipe model initialization
+mp_holistic = mp.solutions.holistic
+mp_drawing = mp.solutions.drawing_utils
+mp_face = mp.solutions.face_mesh
+
+# Model initialization
+os.chdir('weights')
+model = load_model("actionsIncludingSleeping.h5")
+yolo_model = YOLO("yolo11n.pt")
+os.chdir('..')
+
+
+# Actions and labels to be detected
+ACTIONS = ['Eating in Classroom', 'Hand Raise', 'Reading Book', 'Sitting on Desk', 'Sleeping', 'Writing in Textbook', "Using Phone"]
+
+DISTRACTED_ACTIONS = ['Eating in Classroom', 'Sleeping', 'Using Phone']
+PRODUCTIVE_ACTIONS = ['Hand Raise', 'Reading Book', 'Sitting on Desk', 'Writing in Textbook']
+
+label_map = {'Eating in Classroom': 0,
+ 'Hand Raise': 1,
+ 'Reading Book': 2,
+ 'Sitting on Desk': 3,
+ 'Sleeping': 4,
+ 'Writing in Textbook': 5,
+ 'Using Phone': 6}
+
+# Initialize variables and Constants
+THRESHOLD = 0.4
+FRAME_INTERVAL = 1
+RESIZE_WIDTH = 224
+RESIZE_HEIGHT = 224
+SEQUENCE_LENGTH = 30
+MODEL_CALL_INTERVAL = 1
+bbox_history = defaultdict(lambda: [])
+sequence = []
+students_sequences = defaultdict(lambda: [])  # stores keypoints for each student
+last_action = defaultdict(lambda: [])
+
+# Helper Functions for frame processing and normalization
+def mediapipe_detection(image, model):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image.flags.writeable = False
+    results = model.process(image)
+    image.flags.writeable = True
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    return image, results
+
+    
+def extract_keypoints(results):
+    pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(33*4)
+    face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else np.zeros(468*3)
+    lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
+    rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
+    return np.concatenate([pose, face, lh, rh])
+
+def smooth_bbox(track_id, new_bbox):
+    """Smooth bounding box by averaging recent detections."""
+    if track_id not in bbox_history:
+        bbox_history[track_id] = []
+    bbox_history[track_id].append(new_bbox)
+    avg_bbox = np.mean(bbox_history[track_id], axis=0)  # Compute the average bounding box
+    return tuple(map(int, avg_bbox))
+
+def expand_bbox(x1, y1, x2, y2, scale=1.2):
+    """Expand the bounding box by a scale factor."""
+    w, h = x2 - x1, y2 - y1
+    new_w, new_h = int(w * scale), int(h * scale)
+    new_x1 = max(0, x1 - (new_w - w) // 2)
+    new_y1 = max(0, y1 - (new_h - h) // 2)
+    new_x2 = new_x1 + new_w
+    new_y2 = new_y1 + new_h
+    return new_x1, new_y1, new_x2, new_y2
+
+def get_center(box):
+    x1, y1, x2, y2 = box
+    return (int((x1 + x2) / 2), int((y1 + y2) / 2))
+
+def is_file_in_use(file_path):
+    for proc in psutil.process_iter():
+        try:
+            for item in proc.open_files():
+                if file_path in item.path:
+                    return True
+        except Exception:
+            pass
+    return False
+
+def process_video(video_path):
+    # Load the video
+    cap = cv2.VideoCapture(video_path)
+
+    # Define output path for processed video
+    output_path = os.path.join(default_storage.location,"processed_videos", "processed_video.mp4")
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+    # Process each frame
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Add custom text or processing here
+        cv2.putText(frame, "Processed Frame", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+        # Write processed frame to new video
+        out.write(frame)
+
+    # Release resources
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
+
+    return output_path
+
+
 
 # Receive Video URL Class
 class live_video(APIView):
@@ -102,7 +221,9 @@ def process_frame(frame):
     return frame
 
 
-class upload_video  (APIView):
+
+
+class upload_video(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -175,44 +296,5 @@ class upload_video  (APIView):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
-def is_file_in_use(file_path):
-    for proc in psutil.process_iter():
-        try:
-            for item in proc.open_files():
-                if file_path in item.path:
-                    return True
-        except Exception:
-            pass
-    return False
 
 
-def process_video(video_path):
-    # Load the video
-    cap = cv2.VideoCapture(video_path)
-
-    # Define output path for processed video
-    output_path = os.path.join(default_storage.location,"processed_videos", "processed_video.mp4")
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
-    # Process each frame
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        # Add custom text or processing here
-        cv2.putText(frame, "Processed Frame", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-        # Write processed frame to new video
-        out.write(frame)
-
-    # Release resources
-    cap.release()
-    out.release()
-    cv2.destroyAllWindows()
-
-    return output_path
