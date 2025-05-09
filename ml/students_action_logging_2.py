@@ -9,6 +9,7 @@ import mediapipe as mp
 from ultralytics import YOLO
 from collections import deque, defaultdict
 from tensorflow.keras.models import load_model
+import subprocess
 
 def face_encodings_for_dataset(image_data_path = "images"):
     encodings = {}
@@ -133,6 +134,7 @@ def run_multiple_inference(video_path=None):
     writer = csv.writer(f)
     fps = cap.get(cv2.CAP_PROP_FPS)
     frame_index = 0
+    output_path = None
     # save video only if video_path of video is provided, if webcam or IP is provided then no need to save, just show live
     output_video = None
     if video_path is not None and video_path.endswith(('.mp4', '.avi', '.mov')):
@@ -211,12 +213,11 @@ def run_multiple_inference(video_path=None):
                         if roi is None or roi.size == 0 or roi.shape[0] == 0 or roi.shape[1] == 0:
                             continue
                         person_crop_resized = cv2.resize(roi, (RESIZE_WIDTH, RESIZE_HEIGHT))  
-
                         rgb_small_frame = cv2.cvtColor(person_crop_resized, cv2.COLOR_BGR2RGB)
                         face_locations = face_recognition.face_locations(rgb_small_frame)
                         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
                         # print(face_encodings)
-                        face_names = []
+
                         for face_encoding in face_encodings:
                             matches = face_recognition.compare_faces(list(encodings.values()), face_encoding)
                             face_distances = face_recognition.face_distance(list(encodings.values()), face_encoding)
@@ -316,7 +317,7 @@ def run_multiple_inference(video_path=None):
                     
                     if last_act != predicted_action:
                         print(f"Detected: {name} - Action: {predicted_action}")
-                        writer.writerow([name, "Using Phone", f"{formatted_date} {timestamp_str}"])
+                        writer.writerow([name, predicted_action, f"{formatted_date} {timestamp_str}"])
 
                 print(f"Detected")
             if output_video is not None:
@@ -331,5 +332,22 @@ def run_multiple_inference(video_path=None):
     cap.release()
     f.close()
     cv2.destroyAllWindows()
+    return output_path   
 
-run_multiple_inference("using phone.mp4")
+
+def convert_to_streamable_mp4(input_path, output_path):
+    command = [
+        "ffmpeg",
+        "-y",  # overwrite if exists
+        "-i", input_path,
+        "-vcodec", "libx264",
+        "-acodec", "aac",
+        "-movflags", "+faststart",
+        output_path
+    ]
+    subprocess.run(command, check=True)
+    
+
+
+output_path = run_multiple_inference("test3.mp4")
+convert_to_streamable_mp4(output_path, "final_output.mp4")
