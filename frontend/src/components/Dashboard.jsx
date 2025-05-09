@@ -30,58 +30,70 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 const Dashboard = () => {
-  
   const [donoughtData, setDonoughtData] = useState([]);
   const [barData, setBarData] = useState([]);
   const [pieData, setPieData] = useState([]);
+  const [lineData, setLineData] = useState([]);
 
-  const bardata = [
-    { name: "Mobile", value: 20 },
-    { name: "Eating", value: 10 },
-    { name: "HandRaise", value: 15 },
-    { name: "Sleeping", value: 2 },
-    { name: "Reading", value: 50 },
-    { name: "Writing", value: 30 },
-    { name: "Sitting", value: 70 },
-  ];
-
-  const piedata = [
-    { name: "Using Mobile", value: 25 },
-    { name: "Eating", value: 24 },
-    { name: "Hand Raise", value: 17 },
-    { name: "Sleeing", value: 34 },
-  ];
-
-  const radarData = [
-    { subject: "Hand Raise", score: 120, fullMark: 150 },
-    { subject: "Using Mobile", score: 85, fullMark: 150 },
-    { subject: "Reading", score: 130, fullMark: 150 },
-    { subject: "Eating", score: 90, fullMark: 150 },
-    { subject: "Writing", score: 130, fullMark: 150 },
-    { subject: "Sleeping", score: 100, fullMark: 150 },
-  ];
 
   useEffect(() => {
-    // axios.get(`/api/positive-negative/?class_name=${className}`)
-      // .then(response => {
-        // const res = response.data;
+    let bardata = [];
+    let piedata = [];
+    let linedata = [];
+    axios
+      .get("http://127.0.0.1:8000/analysis/positive-negative-stats")
+      .then((response) => {
+        const res = response.data;
         setDonoughtData([
-          { name: 'Positive', value: 4 },
-          { name: 'Negative', value: 8 }
+          { name: "Positive", value: res.positive },
+          { name: "Negative", value: res.negative },
         ]);
-        setBarData(bardata);
-        setPieData(piedata);
-      // })
-      // .catch(error => {
-      //   console.error("Error fetching activity stats:", error);
-      // });
+
+        axios
+          .get("http://127.0.0.1:8000/analysis/activity-count")
+          .then((response) => {
+            const res = response.data;
+            bardata = Object.entries(res).map(([key, value]) => ({
+              name: key,
+              value: value,
+            }));
+            setBarData(bardata);
+          });
+
+        axios
+          .get("http://127.0.0.1:8000/analysis/percentage-of-actions")
+          .then((response) => {
+            const res = response.data;
+            piedata = Object.entries(res).map(([key, value]) => ({
+              name: key,
+              value: value,
+            }));
+            setPieData(piedata);
+          });
+
+        axios
+          .get("http://127.0.0.1:8000/analysis/activities-per-student")
+          .then((response) => {
+            const res = response.data;
+            linedata = Object.entries(res).map(([key, value]) => ({
+              name: key,
+              value: value,
+            }));
+            setLineData(linedata);
+          });
+
+        
+      })
+
+      .catch((error) => {
+        console.error("Error fetching activity stats:", error);
+      });
   }, []);
   // Updated data to match the image
-  
 
   const COLORS = ["#514ae0", "#00C49F", "#FFBB28", "#FF8042"];
 
-  const COLORS2 = ['#00C49F', '#FF8042']; // green = positive, orange = negative
+  const COLORS2 = ["#00C49F", "#FF8042"]; // green = positive, orange = negative
 
   return (
     <main className="dashboard-container">
@@ -127,7 +139,7 @@ const Dashboard = () => {
             <BarChart data={barData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis domain={[0, 100]} />
+              <YAxis domain={[0, 10]} />
               <Tooltip />
               <Legend />
               <Bar dataKey="value" fill="#514ae0" />
@@ -138,10 +150,10 @@ const Dashboard = () => {
         <div className="chart-container">
           <h3>Suspect Performance</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={barData}>
+            <LineChart data={lineData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis domain={[0, 100]} />
+              <YAxis domain={[0, 10]} />
               <Tooltip />
               <Legend />
               <Line
@@ -187,29 +199,29 @@ const Dashboard = () => {
         <div className="chart-container">
           <h3 className="text-xl font-semibold mb-2">Productivity Overview</h3>
           <ResponsiveContainer width="100%" height={300}>
-          <PieChart >
-            <Pie
-              data={donoughtData}
-              cx="50%"
-              cy="50%"
-              innerRadius={70}
-              outerRadius={100}
-              fill="#8884d8"
-              paddingAngle={5}
-              dataKey="value"
-              label
+            <PieChart>
+              <Pie
+                data={donoughtData}
+                cx="50%"
+                cy="50%"
+                innerRadius={70}
+                outerRadius={100}
+                fill="#8884d8"
+                paddingAngle={5}
+                dataKey="value"
+                label
               >
-              {donoughtData.map((entry, index) => (
-                <Cell
-                key={`cell-${index}`}
-                fill={COLORS2[index % COLORS2.length]}
-                />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-            </ResponsiveContainer>
+                {donoughtData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS2[index % COLORS2.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </main>
