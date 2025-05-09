@@ -180,10 +180,12 @@ def process_video(video_path):
     cap = cv2.VideoCapture(video_path)
     FRAME_COUNT = 0
     file_path = os.path.join(default_storage.location, "logs/data.csv")
+    header_row = ["Name", "Action", "Timestamp"]
 
     # temporary file, so that every entry will rewrite the previous one, only single file will be maintained
     f = open(file_path, 'w', newline='')
     writer = csv.writer(f)
+    writer.writerow(header_row)
     frame_index = 0
     
 
