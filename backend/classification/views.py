@@ -20,7 +20,10 @@ import subprocess
 import shutil
 import pickle
 import csv
-
+from analysis.models import ClassData   
+from django.core.files import File
+from django.core.files.storage import FileSystemStorage
+import threading
 
 # For Face Recognition of students for logging purpose
 def face_encodings_for_dataset(image_data_path = "/run/media/yashtapre77/New Volume/Projects/Class Vision/backend/classification/images"):
@@ -157,12 +160,28 @@ def convert_to_streamable_mp4(input_path, output_path):
     ]
     subprocess.run(command, check=True)
 
+def schedule_folder_cleanup(folder_paths, delay=3):
+    def delete_folder():
+        try:
+            for folder_path in folder_paths:
+                if os.path.exists(folder_path):
+                    shutil.rmtree(folder_path)
+                    print(f"Deleted temp folder: {folder_path}")
+                print("for")
+            print("try")
+        except Exception as e:
+            print(f"Error deleting folder: {folder_path} -> {e}")
+    print(f"Scheduling folder cleanup in {delay} seconds...")
+    threading.Timer(delay, delete_folder).start()
+
 def process_video(video_path):
     # Load the video
     cap = cv2.VideoCapture(video_path)
     FRAME_COUNT = 0
+    file_path = os.path.join(default_storage.location, "logs/data.csv")
 
-    f = open(f"{current_date}_{current_time}.csv", 'w', newline='')
+    # temporary file, so that every entry will rewrite the previous one, only single file will be maintained
+    f = open(file_path, 'w', newline='')
     writer = csv.writer(f)
     frame_index = 0
     
@@ -171,7 +190,7 @@ def process_video(video_path):
     base_name = os.path.basename(video_path)
     name, ext = os.path.splitext(base_name)
     # Define output path for processed video
-    output_path = os.path.join(default_storage.location,"processed_videos", f"analyzed_{name}{ext}")
+    output_path = os.path.join(default_storage.location,"processed_videos", f"analyzed{ext}")
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -185,8 +204,8 @@ def process_video(video_path):
     print()
     print("*****************************************************************************************************************************************")
 
-    for i in encodings.keys():
-        writer.writerow([i, "Siting on Desk", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])   
+    # for i in encodings.keys():
+    #     writer.writerow([i, "Siting on Desk", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])   
 
 
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
@@ -370,7 +389,7 @@ def process_video(video_path):
     out.release()
     cv2.destroyAllWindows()
 
-    return output_path
+    return output_path, file_path
 
 
 
@@ -469,11 +488,21 @@ class upload_video(APIView):
                 return Response({"error": "No video file provided"}, status=400)
             
             # Save the uploaded video temporarily
-            video_path = default_storage.save("temp\\" + video_file.name, video_file)
+            ext = os.path.splitext(video_file.name)[1]
+
+            temp_video_path = os.path.join("temp", f"tempfile{ext}")
+
+            # Delete the file if it already exists
+            if default_storage.exists(temp_video_path):
+                default_storage.delete(temp_video_path)
+
+            # Now save the uploaded file
+            video_path = default_storage.save(temp_video_path, video_file)
+
             video_full_path = os.path.join(default_storage.location, video_path)
 
             # Process the video
-            processed_video_path = process_video(video_full_path)
+            processed_video_path, file_path = process_video(video_full_path)
 
             convert_to_streamable_mp4(processed_video_path, "media/processed_videos/output.mp4")
 
@@ -494,6 +523,38 @@ class upload_video(APIView):
             # os.remove(video_full_path)
             # os.remove(processed_video_path)
             # os.remove(output_video_path)
+
+            class_name = "Class A"  # Get this from request or context
+
+            with open(file_path, 'rb') as f:
+                django_file = File(f)
+
+                try:
+                    # Try to get the existing record
+                    class_data = ClassData.objects.get(class_name=class_name)
+
+                    # Delete the old file if it exists
+                    if class_data.csv_file:
+                        class_data.csv_file.delete(save=False)
+
+                    # Save the new file with the same name
+                    class_data.csv_file.save("log_class_a.csv", django_file, save=True)
+                    class_data.description = "Updated after re-processing"
+                    class_data.mode = "student"  # or other value
+                    class_data.save()
+                except ClassData.DoesNotExist:
+                    # Create a new record
+                    ClassData.objects.create(
+                        class_name=class_name,
+                        csv_file=django_file,
+                        description="Created after processing",
+                        mode="student"
+                    )
+
+
+            # Schedule folder cleanup
+            # paths = [os.path.join(default_storage.location, "temp"), os.path.join(default_storage.location, "processed_videos")]
+            # schedule_folder_cleanup(paths, delay=500)
 
             return response
 
