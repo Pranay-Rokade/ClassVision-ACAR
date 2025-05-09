@@ -98,6 +98,7 @@ bbox_history = defaultdict(lambda: [])
 sequence = []
 students_sequences = defaultdict(lambda: [])  # stores keypoints for each student
 last_action = defaultdict(lambda: [])
+last_bounding_box = defaultdict(lambda: [])
 
 # Helper Functions for frame processing and normalization
 def mediapipe_detection(image, model):
@@ -216,6 +217,16 @@ def process_video(video_path):
 
             frame_index += 1
             if FRAME_COUNT % FRAME_INTERVAL != 0:
+                for i in last_bounding_box.keys():
+                    x1, y1, x2, y2 = last_bounding_box[i]
+                    if last_action[i] in PRODUCTIVE_ACTIONS:
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.putText(frame, last_action[i], (x1 + 10, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    else :
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                        cv2.putText(frame, last_action[i], (x1 + 10, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+
+                out.write(frame)
                 FRAME_COUNT += 1
                 continue
 
@@ -289,6 +300,7 @@ def process_video(video_path):
                                 writer.writerow([name, "Using Phone", f"{formatted_date} {timestamp_str}"])
 
                         last_action[closest_person_id] = "Using Phone"  # Store last detected action
+                        last_bounding_box[closest_person_id] = (x1, y1, x2, y2)
 
                         # Draw bounding box only around phone user
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
@@ -351,6 +363,7 @@ def process_video(video_path):
                         last_action[track_id] = predicted_action  # Store last detected action
                     else:
                         last_action[track_id] = "Sitting on Desk"
+                    last_bounding_box[track_id] = (x1, y1, x2, y2)
 
                 if predicted_action in PRODUCTIVE_ACTIONS:
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -366,17 +379,17 @@ def process_video(video_path):
                 face_locations = face_recognition.face_locations(rgb_small_frame)
                 face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
                 # print(face_encodings)
+                name = "Unknown"
                 for face_encoding in face_encodings:
                     matches = face_recognition.compare_faces(list(encodings.values()), face_encoding)
                     face_distances = face_recognition.face_distance(list(encodings.values()), face_encoding)
                     best_match_index = np.argmin(face_distances)
-                    name = "Unknown"
                     if matches[best_match_index]:
                         name = list(encodings.keys())[best_match_index]
                     
-                    if last_act != predicted_action:
-                        print(f"Detected: {name} - Action: {predicted_action}")
-                        writer.writerow([name, predicted_action, f"{formatted_date} {timestamp_str}"])
+                if last_act != predicted_action:
+                    print(f"Detected: {name} - Action: {predicted_action}")
+                    writer.writerow([name, predicted_action, f"{formatted_date} {timestamp_str}"])
 
             FRAME_COUNT += 1
             out.write(frame)
