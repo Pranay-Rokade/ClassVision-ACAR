@@ -7,8 +7,9 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.conf import settings
 import requests
 import psutil
-import time
 import os
+from datetime import datetime
+import face_recognition
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -17,6 +18,39 @@ from collections import deque, defaultdict
 from tensorflow.keras.models import load_model
 import subprocess
 import shutil
+import pickle
+import csv
+
+
+# For Face Recognition of students for logging purpose
+def face_encodings_for_dataset(image_data_path = "/run/media/yashtapre77/New Volume/Projects/Class Vision/backend/classification/images"):
+    encodings = {}
+    for filename in os.listdir(image_data_path):
+        name = os.path.splitext(filename)[0]
+        print(f"Processing {filename}, {name}")
+        img = face_recognition.load_image_file(os.path.join(image_data_path, filename))
+        encodings[name] = face_recognition.face_encodings(img)[0]
+    
+    with open('encodings.pickle', 'wb') as f:
+        pickle.dump(encodings, f)
+
+    return encodings
+
+if os.path.isfile('encodings.pickle'):
+    with open('encodings.pickle', 'rb') as f:
+        encodings = pickle.load(f)
+else:
+    encodings = face_encodings_for_dataset() 
+
+face_locations = []
+face_encodings = []
+face_names = []
+s = True
+
+now = datetime.now()
+current_date = now.strftime("%Y-%m-%d")
+current_time = now.strftime("%H-%M-%S")
+
 
 
 # Create your views here.
@@ -52,7 +86,7 @@ label_map = {'Eating in Classroom': 0,
 
 # Initialize variables and Constants
 THRESHOLD = 0.4
-FRAME_INTERVAL = 1
+FRAME_INTERVAL = 6
 RESIZE_WIDTH = 224
 RESIZE_HEIGHT = 224
 SEQUENCE_LENGTH = 30
@@ -128,6 +162,12 @@ def process_video(video_path):
     cap = cv2.VideoCapture(video_path)
     FRAME_COUNT = 0
 
+    f = open(f"{current_date}_{current_time}.csv", 'w', newline='')
+    writer = csv.writer(f)
+    frame_index = 0
+    
+
+
     base_name = os.path.basename(video_path)
     name, ext = os.path.splitext(base_name)
     # Define output path for processed video
@@ -137,6 +177,17 @@ def process_video(video_path):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+    print("*****************************************************************************************************************************************")
+    print()
+    print()
+    print(fps)
+    print()
+    print()
+    print("*****************************************************************************************************************************************")
+
+    for i in encodings.keys():
+        writer.writerow([i, "Siting on Desk", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])   
+
 
     with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
         while cap.isOpened():
@@ -144,9 +195,24 @@ def process_video(video_path):
             if not ret or frame is None:
                 break
 
-            # if frame_count % FRAME_INTERVAL != 0:
-            #     frame_count += 1
-            #     continue
+            frame_index += 1
+            if FRAME_COUNT % FRAME_INTERVAL != 0:
+                FRAME_COUNT += 1
+                continue
+
+
+             # Calculate timestamp in seconds
+            timestamp_sec = frame_index / fps
+
+            # Optionally, convert to HH:MM:SS format
+            hours = int(timestamp_sec // 3600)
+            minutes = int((timestamp_sec % 3600) // 60)
+            seconds = int(timestamp_sec % 60)
+            millis = int((timestamp_sec % 1) * 1000)
+
+            timestamp_str = f"{hours:02}:{minutes:02}:{seconds:02}.{millis:03}"
+            formatted_date = now.strftime("%Y-%m-%d") 
+
 
             detected_obejets = yolo_model.track(frame, persist=True, classes=[0, 67])  # Detect only humans and phones
 
@@ -180,6 +246,30 @@ def process_video(video_path):
                     if closest_person_id is not None:
                         person_ids_using_phone.append(closest_person_id)
                         x1, y1, x2, y2 = map(int, persons[closest_person_id])
+
+                        # detect student face in video and log their action as using phone
+                        roi = frame[y1:y2, x1:x2]
+                        if roi is None or roi.size == 0 or roi.shape[0] == 0 or roi.shape[1] == 0:
+                            continue
+                        person_crop_resized = cv2.resize(roi, (RESIZE_WIDTH, RESIZE_HEIGHT))  
+                        rgb_small_frame = cv2.cvtColor(person_crop_resized, cv2.COLOR_BGR2RGB)
+                        face_locations = face_recognition.face_locations(rgb_small_frame)
+                        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                        # print(face_encodings)
+
+                        for face_encoding in face_encodings:
+                            matches = face_recognition.compare_faces(list(encodings.values()), face_encoding)
+                            face_distances = face_recognition.face_distance(list(encodings.values()), face_encoding)
+                            best_match_index = np.argmin(face_distances)
+                            name = "Unknown"
+                            if matches[best_match_index]:
+                                name = list(encodings.keys())[best_match_index]
+                    
+                            if last_action[closest_person_id] != "Using Phone":
+                                print(f"Detected: {name} - Action: {predicted_action}")
+                                writer.writerow([name, "Using Phone", f"{formatted_date} {timestamp_str}"])
+
+                        last_action[closest_person_id] = "Using Phone"  # Store last detected action
 
                         # Draw bounding box only around phone user
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
@@ -228,11 +318,15 @@ def process_video(video_path):
                 if len(students_sequences[track_id]) > SEQUENCE_LENGTH:
                     students_sequences[track_id] = students_sequences[track_id][MODEL_CALL_INTERVAL:]  # Remove first MODEO_CALL_INTERVAL frames
 
+                last_act = "Sitting on Desk"  # Default action if, predicted action does not exceed threshold
                 if len(students_sequences[track_id]) == SEQUENCE_LENGTH:
                     res = model.predict(np.expand_dims(students_sequences[track_id], axis=0))
                     res = np.squeeze(res)
                     predicted_action = ACTIONS[np.argmax(res)]
                     confidence = res[np.argmax(res)]
+
+                    last_act = last_action[track_id]
+
 
                     if confidence > THRESHOLD:  # Confidence threshold
                         last_action[track_id] = predicted_action  # Store last detected action
@@ -247,6 +341,25 @@ def process_video(video_path):
                     cv2.putText(frame, predicted_action, (x1 + 10, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
 
+                # face detection and encoding
+                # small_frame = cv2.resize(person_crop_resized, (0, 0), fx=0.25, fy=0.25)
+                rgb_small_frame = cv2.cvtColor(person_crop_resized, cv2.COLOR_BGR2RGB)
+                face_locations = face_recognition.face_locations(rgb_small_frame)
+                face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                # print(face_encodings)
+                for face_encoding in face_encodings:
+                    matches = face_recognition.compare_faces(list(encodings.values()), face_encoding)
+                    face_distances = face_recognition.face_distance(list(encodings.values()), face_encoding)
+                    best_match_index = np.argmin(face_distances)
+                    name = "Unknown"
+                    if matches[best_match_index]:
+                        name = list(encodings.keys())[best_match_index]
+                    
+                    if last_act != predicted_action:
+                        print(f"Detected: {name} - Action: {predicted_action}")
+                        writer.writerow([name, predicted_action, f"{formatted_date} {timestamp_str}"])
+
+            FRAME_COUNT += 1
             out.write(frame)
 
             if cv2.waitKey(10) & 0xFF == ord('q'):

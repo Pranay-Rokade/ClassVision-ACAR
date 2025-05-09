@@ -75,3 +75,6 @@ venv
 # Add any other files or directories that you don't want to track
 # For example, if you have a directory for temporary test files:
 # test_files/
+
+
+classification/images/

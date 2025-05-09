@@ -91,7 +91,6 @@ const Upload2 = () => {
       // Show success alert
       // alert('Video processed successfully!');
       toast.success("successful",{
-        position: toast.POSITION.TOP_RIGHT,
         autoClose: 500,
     });
     } catch (error) {

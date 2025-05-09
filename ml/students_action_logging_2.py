@@ -306,7 +306,7 @@ def run_multiple_inference(video_path=None):
                 face_locations = face_recognition.face_locations(rgb_small_frame)
                 face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
                 # print(face_encodings)
-                face_names = []
+
                 for face_encoding in face_encodings:
                     matches = face_recognition.compare_faces(list(encodings.values()), face_encoding)
                     face_distances = face_recognition.face_distance(list(encodings.values()), face_encoding)
