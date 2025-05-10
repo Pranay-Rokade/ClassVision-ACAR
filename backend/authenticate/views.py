@@ -95,7 +95,7 @@ class register(APIView):
         # Hash the password
         # hashed_password = make_password(password)
 
-        otp = send_otp(fullname, email, subject_verify_email, body_email_verification_otp)
+        # otp = send_otp(fullname, email, subject_verify_email, body_email_verification_otp)
         # Create a new user instance but do not activate it yet (needs OTP verification)
 
         user = User.objects.create(
@@ -105,8 +105,8 @@ class register(APIView):
             email=email,
             password=password,
             role=role,
-            is_email_verified=False,  # Set to False until OTP is verified
-            otp=otp,
+            is_email_verified=True,  # Set to False until OTP is verified
+            otp=12345,
             otp_expiry=otp_expiry,
         )
 

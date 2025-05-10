@@ -1,6 +1,7 @@
 import React, { useEffect,useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
+import axios from "axios";
 
 const InputField = ({ id, type, placeholder, value, onChange }) => {
     return (
@@ -50,6 +51,7 @@ const Signup = () => {
       alert("Passwords do not match!");
       return;
     }
+    axios.post
     console.log("Username:", username);
     console.log("Email:", email);
     console.log("Password:", password);

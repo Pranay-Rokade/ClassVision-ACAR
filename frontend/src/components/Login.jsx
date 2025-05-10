@@ -1,7 +1,7 @@
 import React, { useEffect,useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
-
+import { toast } from "react-toastify";
 import axios from "axios";
 
 const InputField = ({ id, type, placeholder, value, onChange }) => {
@@ -43,6 +43,7 @@ const InputField = ({ id, type, placeholder, value, onChange }) => {
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,6 +59,14 @@ const Login = () => {
         },
       });
       console.log("Response:", response);
+      if (response.status === 200) {
+        // route to upload page
+        navigate("/upload");
+        // Redirect or perform any other action
+      } else {
+        // Handle login failure
+        toast.error("Login failed. Please check your credentials.");
+      }
     } catch (error) {
       
     }

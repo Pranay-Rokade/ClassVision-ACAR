@@ -44,7 +44,7 @@ const Hero = () => {
           <p className="body-1 max-w-3xl mx-auto mb-6 text-n-2 lg:mb-8">
             Empowering teachers with real-time insights into student activities for enhanced classroom monitoring and engagement with ClassVision.
           </p>
-          <Link to="/upload">
+          <Link to="/login">
           <Button white>
             Get started
           </Button>
