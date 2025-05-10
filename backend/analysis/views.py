@@ -55,7 +55,15 @@ class activity_count(APIView):
             class_data = ClassData.objects.get(class_name=class_name)
             df = pd.read_csv(class_data.csv_file.path)
 
+            new_keys = {"Reading Book":'Reading', "Sitting on Desk":'Sitting ', "Writing in Textbook":'Writing ',"Eating in Classroom":'Eating'}
+            
             response_data = activity_counts(df)
+            for key, value in new_keys.items():
+                response_data[value] = response_data[key]
+
+            for i in new_keys.keys():
+                del response_data[i]
+
             return JsonResponse(response_data)
 
         except ClassData.DoesNotExist:

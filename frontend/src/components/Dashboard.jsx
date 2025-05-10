@@ -35,6 +35,11 @@ const Dashboard = () => {
   const [pieData, setPieData] = useState([]);
   const [lineData, setLineData] = useState([]);
 
+  const [sudents, setStudents] = useState();
+  const [activities, setActivities] = useState();
+  const [positiveActivities, setPositiveActivities] = useState();
+  const [negativeActivities, setNegativeActivities] = useState();
+
 
   useEffect(() => {
     let bardata = [];
@@ -82,6 +87,16 @@ const Dashboard = () => {
             setLineData(linedata);
           });
 
+        axios
+          .get("http://127.0.0.1:8000/analysis/kpis")
+          .then((response) => {
+            const res = response.data;
+            setStudents(res.total_students);
+            setActivities(res.total_unique_activities);  
+            setPositiveActivities(res.positive_activities);
+            setNegativeActivities(res.negative_activities);
+          });
+
         
       })
 
@@ -91,15 +106,15 @@ const Dashboard = () => {
   }, []);
   // Updated data to match the image
 
-  const COLORS = ["#514ae0", "#00C49F", "#FFBB28", "#FF8042"];
+  const COLORS = ["#514ae0", "#00C49F", "#FFBB28", "#FF8042", "#FF6FCF", "#36A2EB"]  ;
 
   const COLORS2 = ["#00C49F", "#FF8042"]; // green = positive, orange = negative
 
   return (
     <main className="dashboard-container">
-      <div className="dashboard-title">
+      {/* <div className="dashboard-title">
         <h3>DASHBOARD</h3>
-      </div>
+      </div> */}
 
       <div className="dashboard-cards">
         <div className="card" style={{ backgroundColor: "#2962ff" }}>
@@ -107,35 +122,35 @@ const Dashboard = () => {
             <h3>STUDENTS</h3>
             <BsFillArchiveFill className="card_icon" />
           </div>
-          <h1>3</h1>
+          <h1>{sudents}</h1>
         </div>
         <div className="card" style={{ backgroundColor: "#ff6d00" }}>
           <div className="card-inner">
             <h3>ACTIVITES PERFORMED</h3>
             <BsFillGrid3X3GapFill className="card_icon" />
           </div>
-          <h1>10</h1>
+          <h1>{activities}</h1>
         </div>
         <div className="card" style={{ backgroundColor: "#2e7d32" }}>
           <div className="card-inner">
             <h3>POSITIVE ACTIVITES PERFORMED</h3>
             <BsPeopleFill className="card_icon" />
           </div>
-          <h1>8</h1>
+          <h1>{positiveActivities}</h1>
         </div>
         <div className="card" style={{ backgroundColor: "#d50000" }}>
           <div className="card-inner">
             <h3>NEGATIVE ACTIVITIES PERFORMED</h3>
             <BsFillBellFill className="card_icon" />
           </div>
-          <h1>2</h1>
+          <h1>{negativeActivities}</h1>
         </div>
       </div>
 
       <div className="charts">
         <div className="chart-container">
           <h3>Number of Times Activity Detected</h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <BarChart data={barData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -149,7 +164,7 @@ const Dashboard = () => {
 
         <div className="chart-container">
           <h3>Suspect Performance</h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <LineChart data={lineData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -170,7 +185,7 @@ const Dashboard = () => {
       <div className="bottom-charts">
         <div className="chart-container">
           <h3>Teacher Attention Required Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
                 data={pieData}
@@ -198,7 +213,7 @@ const Dashboard = () => {
 
         <div className="chart-container">
           <h3 className="text-xl font-semibold mb-2">Productivity Overview</h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
                 data={donoughtData}
