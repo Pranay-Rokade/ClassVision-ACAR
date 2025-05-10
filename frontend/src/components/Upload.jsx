@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Button from './Button';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
 
 const Upload2 = () => {
   const [originalVideoFile, setOriginalVideoFile] = useState(null);
@@ -242,14 +243,28 @@ const Upload2 = () => {
 
               {/* Download button for processed video */}
               {processedVideoUrl && !errorMessage && (
-                <div className="mt-4">
+                <div className="mt-4 ">
+                  <div>
+
                   <a
                     href={processedVideoUrl}
                     download="processed_video.mp4"
                     className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg"
-                  >
+                    >
                     Download Processed Video
                   </a>
+                    </div>
+                    <div className="mt-4 flex justify-center">
+
+                  <Link to={'/dashboard'}>
+                  <a
+                    download="processed_video.mp4"
+                    className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg"
+                    >
+                    Go to Dashboard
+                  </a>
+                  </Link>
+                    </div>
                 </div>
               )}
             </div>
