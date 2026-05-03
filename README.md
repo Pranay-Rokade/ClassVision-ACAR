@@ -37,6 +37,7 @@
   - [Prerequisites](#prerequisites)
   - [Backend Setup](#1-backend-setup)
   - [Frontend Setup](#2-frontend-setup)
+  - [Docker Deployment](#-docker-deployment-run-with-one-command)
 - [API Reference](#-api-reference)
 - [ML Pipeline Deep Dive](#-ml-pipeline-deep-dive)
 - [Model Performance & Results](#-model-performance--results)
@@ -447,9 +448,109 @@ cd ml
 python face_encode.py
 ```
 
-### 4. Deployment Notes
+---
 
-The application can be containerized using **Docker** for consistent performance across different systems. The core detection and classification modules support **GPU acceleration** for real-time inference, with **CPU fallbacks** implemented for broader accessibility on standard school hardware.
+## 🐳 Docker Deployment (Run with One Command)
+
+The entire application is containerized with Docker — **no manual setup required**. One command installs everything (Python, Node, TensorFlow, YOLO, MediaPipe, OpenCV, FFmpeg, dlib) and starts the app.
+
+### What Docker Does (In Simple Terms)
+
+```
+Without Docker:  "Works on my machine" 🤷 → Fails on yours
+With Docker:     "Works on EVERY machine" ✅ → Same result everywhere
+```
+
+Docker packages your entire app — all code, all dependencies, all model weights — into a self-contained box (called a "container"). Anyone can run it on any OS with a single command.
+
+### Architecture
+
+```
+docker-compose up --build
+        │
+        ├── 📦 Backend Container (classvision-backend)
+        │   ├── Python 3.10
+        │   ├── Django + Gunicorn (production server)
+        │   ├── TensorFlow + YOLO + MediaPipe + dlib
+        │   ├── OpenCV + FFmpeg
+        │   ├── Model weights (.h5 + .pt)
+        │   └── Listening on :8000
+        │
+        └── 📦 Frontend Container (classvision-frontend)
+            ├── React build (static files)
+            ├── Nginx (web server + reverse proxy)
+            ├── Routes / → React app
+            ├── Routes /auth/*, /classify/*, /analysis/* → Backend
+            └── Listening on :80
+```
+
+### Prerequisites
+
+- **Docker** — [Install Docker Desktop](https://docs.docker.com/get-docker/)
+- **Docker Compose** — Included with Docker Desktop
+
+### Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Pranay-Rokade/ClassVision-ACAR.git
+cd ClassVision-ACAR
+
+# 2. (Optional) Create a .env file for email OTP credentials
+cp .env.example .env
+# Edit .env with your values
+
+# 3. Build and start everything
+docker-compose up --build
+```
+
+> ⏳ **First build takes 10–15 minutes** (downloads TensorFlow ~600MB, compiles dlib, etc.)  
+> ⚡ **Subsequent runs start in seconds** (Docker caches all layers)
+
+### Access the App
+
+| Service | URL | Description |
+|---|---|---|
+| 🌐 **Frontend** | `http://localhost` | Main application (login, upload, dashboard) |
+| ⚙️ **Backend API** | `http://localhost:8000` | Django REST API (auto-proxied by Nginx) |
+| 🛠 **Django Admin** | `http://localhost/admin/` | Database admin panel |
+
+### Useful Commands
+
+```bash
+# Start the app
+docker-compose up --build
+
+# Start in background (detached mode)
+docker-compose up --build -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the app
+docker-compose down
+
+# Stop and remove all data (fresh start)
+docker-compose down -v
+
+# Rebuild only the backend
+docker-compose build backend
+
+# Open a shell inside the backend container
+docker exec -it classvision-backend bash
+```
+
+### Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | Yes | Django secret key for security |
+| `EMAIL_ID` | Yes | Gmail address for OTP emails |
+| `EMAIL_PASS` | Yes | Gmail App Password for OTP emails |
+| `DJANGO_DEBUG` | No | `True`/`False` (default: `False` in Docker) |
+| `DJANGO_ALLOWED_HOSTS` | No | Comma-separated hostnames (default: `*`) |
+
+> **Note:** The core detection and classification modules support **GPU acceleration** for real-time inference, with **CPU fallbacks** implemented for broader accessibility on standard school hardware.
 
 ---
 
