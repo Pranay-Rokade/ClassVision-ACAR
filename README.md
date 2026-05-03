@@ -17,6 +17,10 @@
   <img src="https://img.shields.io/badge/YOLOv11-Ultralytics-FF6F61?style=for-the-badge" alt="YOLO"/>
 </p>
 
+> **Academic Project** — B.Tech (Computer Science & Engineering — Data Science), VI Semester  
+> **Institution** — Shri Ramdeobaba College of Engineering & Management, Nagpur  
+> **Guide** — Dr. Uma Yadav, Department of CSE & Emerging Technologies
+
 ---
 
 ## 📋 Table of Contents
@@ -27,6 +31,7 @@
 - [System Architecture](#-system-architecture)
 - [Activities Detected](#-activities-detected)
 - [Tech Stack](#-tech-stack)
+- [Dataset](#-dataset)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
@@ -34,10 +39,13 @@
   - [Frontend Setup](#2-frontend-setup)
 - [API Reference](#-api-reference)
 - [ML Pipeline Deep Dive](#-ml-pipeline-deep-dive)
+- [Model Performance & Results](#-model-performance--results)
 - [Dashboard & Analytics](#-dashboard--analytics)
 - [Screenshots](#-screenshots)
+- [Future Work](#-future-work)
 - [Contributing](#-contributing)
 - [Team](#-team)
+- [References](#-references)
 - [License](#-license)
 
 ---
@@ -193,6 +201,13 @@ The system classifies student behavior into **7 categories**, split into product
 | 😴 **Sleeping** | Student is sleeping or has head down |
 | 📱 **Using Phone** | Phone detected near a student (YOLO-based) |
 
+### 👨‍🏫 Teacher Activities (also modelled)
+| Activity | What It Means |
+|---|---|
+| 🗣️ **Explaining the Subject** | Teacher is actively delivering lessons or interacting with students |
+| 📱 **Using Mobile Phone** | Teacher is using their phone during class |
+| ✍️ **Writing on Board** | Teacher is writing or drawing on the blackboard/whiteboard |
+
 > **Color Coding in Video Output:**
 > - 🟩 **Green** bounding box → Productive activity
 > - 🟥 **Red** bounding box → Distracted activity
@@ -231,6 +246,37 @@ The system classifies student behavior into **7 categories**, split into product
 | **OpenCV** | Video I/O, frame processing, annotation |
 | **NumPy / Pandas** | Data manipulation and CSV logging |
 | **FFmpeg** | Video transcoding to streamable MP4 |
+
+---
+
+## 📂 Dataset
+
+### Edunet DRSTA Dataset
+
+The primary dataset used is the **Edunet DRSTA** (Digital Repository for Smart Teaching and Assessment) Dataset, provided by the Edunet Foundation for academic research use.
+
+| Specification | Value |
+|---|---|
+| Total videos | 7,851 |
+| Student action clips | 4,228 |
+| Teacher action clips | 3,623 |
+| Total classroom action classes | 9 |
+| Student action classes | 6 |
+| Teacher action classes | 3 |
+| Clip duration | 3.25 – 12.7 seconds |
+| Total footage duration | ~12 hours |
+| Students per clip | 2 – 6 |
+
+The dataset was captured in authentic classroom settings using overhead or corner-mounted surveillance cameras. Each video is annotated at the **clip level** (not per-student), which presents a challenge for per-student classification models.
+
+### Custom Dataset
+
+To supplement the Edunet dataset and address gaps in coverage, a **custom dataset** was created by the team. It adds two activity classes absent from Edunet:
+
+- **Sleeping in classroom** — head-down posture, indicating disengagement
+- **Using mobile phone** — small repetitive hand/wrist movements near the torso
+
+The custom recordings were produced in controlled settings while maintaining format consistency with the Edunet dataset, increasing overall data diversity and action granularity.
 
 ---
 
@@ -401,6 +447,10 @@ cd ml
 python face_encode.py
 ```
 
+### 4. Deployment Notes
+
+The application can be containerized using **Docker** for consistent performance across different systems. The core detection and classification modules support **GPU acceleration** for real-time inference, with **CPU fallbacks** implemented for broader accessibility on standard school hardware.
+
 ---
 
 ## 📡 API Reference
@@ -474,6 +524,15 @@ Phone detection doesn't use pose estimation — instead:
 3. The **closest person** to each phone is labeled as "Using Phone"
 4. That person is **excluded** from the normal pose-estimation pipeline
 
+### Earlier Approach: LRCN Model
+
+Before settling on the Pose + LSTM pipeline, **LRCN (Long-term Recurrent Convolutional Networks)** was explored. LRCN combines CNNs for spatial feature extraction with LSTM layers for temporal modelling, processing sequences of 20 raw image frames (64×64 ROI crops) per student.
+
+While LRCN showed initial promise, it was replaced due to:
+- Overfitting — validation loss diverged from training loss after epoch 10
+- Poor generalization to unseen classroom conditions (lighting, clutter, occlusion)
+- Higher computational cost, making real-time multi-student inference impractical
+
 ### Inference Parameters
 
 | Parameter | Value | Purpose |
@@ -484,6 +543,24 @@ Phone detection doesn't use pose estimation — instead:
 | `RESIZE` | 224 × 224 | Crop size for person ROI before keypoint extraction |
 | `BBOX_SMOOTHING` | Rolling average | Smooths bounding box jitter across frames |
 | `BBOX_EXPANSION` | 1.2× | Expands crop to capture full body |
+
+---
+
+## 📈 Model Performance & Results
+
+### Comparative Analysis
+
+Two model architectures were evaluated for student activity classification:
+
+| Architecture | Training Accuracy | Training Loss |
+|---|---|---|
+| **LRCN** (Long-term Recurrent Convolutional Network) | 74.4% | ~43.4% |
+| **Pose Estimation + Stacked LSTM** ✅ *(selected)* | **97.04%** | **~28%** |
+
+### Why Pose + LSTM Won
+
+- **LRCN** struggled with crowded scenes — CNN spatial features were diluted by background noise and multiple overlapping students. Validation loss increased after epoch 10, a clear sign of overfitting.
+- **Pose + LSTM** operates on clean, noise-free skeletal keypoints isolated per student via bounding box tracking. This makes it robust to lighting variation, different clothing, and partial occlusion. Training and validation accuracy both followed a stable upward trajectory across epochs, with validation loss stabilizing — indicating good generalization to unseen data.
 
 ---
 
@@ -527,6 +604,22 @@ Landing Page  →  Login  →  Upload Video  →  Processing  →  View Result  
 
 ---
 
+## 🔭 Future Work
+
+The following enhancements are planned for future iterations of ClassVision:
+
+1. **Emotion & Facial Expression Recognition** — Combine facial expression analysis (confusion, boredom, interest) with the existing pose-based pipeline for a richer behavioral model and more accurate engagement analysis.
+
+2. **Real-Time Alerts** — Trigger automatic notifications for educators when specific patterns are detected — e.g., prolonged phone use, widespread sleeping, or a sudden drop in participation — enabling immediate intervention.
+
+3. **Scalability to Larger Classrooms** — Optimize tracking algorithms and introduce distributed processing to support larger student populations and varied camera layouts without performance degradation.
+
+4. **Expanded & More Diverse Dataset** — Collect training data from multiple schools, age groups, and cultural settings to reduce model bias and improve generalization across real-world conditions.
+
+5. **Multi-Modal Learning & Cognitive Load Analysis** — Integrate gaze tracking, posture analysis, and interaction data to assess student cognitive load — identifying whether students are overwhelmed or under-stimulated to assist in lesson planning.
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Here's how to get started:
@@ -541,11 +634,29 @@ Contributions are welcome! Here's how to get started:
 
 ## 👥 Team
 
-| Member | Role |
-|---|---|
-| **Pranay Rokade** | Project Lead |
-| **Utkarsh** | Developer |
-| **Yash** | Developer |
+| Member | Roll No. | Role |
+|---|---|---|
+| **Ashwin Gour** | 31 | Developer |
+| **Pranay Rokade** | 49 | Project Lead |
+| **Utkarsh Karambhe** | 64 | Developer |
+| **Vivek Sharma** | 67 | Developer |
+| **Yash Tapre** | 72 | Developer |
+
+**Guide:** Dr. Uma Yadav — Department of Computer Science & Engineering and Emerging Technologies, RCOEM Nagpur
+
+---
+
+## 📚 References
+
+1. R. Yuvaraj, A. A. Prince, and M. Murugappan, "An automated recognition of teacher and student activities in the classroom environment: A deep learning framework," *IEEE Access*, DOI: 10.1109/ACCESS.2024.3518577. [Link](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10804154)
+
+2. V. Sharma, M. Gupta, A. Kumar, and D. Mishra, "STAR-3D: A Holistic Approach for Human Activity Recognition in the Classroom Environment," *Information*, vol. 15, no. 4, p. 179, 2024. [Link](https://www.researchgate.net/publication/379283201_STAR3D_A_Holistic_Approach_for_Human_Activity_Recognition_in_the_Classroom_Environment)
+
+3. R. Raj and A. Kos, "An improved human activity recognition technique based on convolutional neural network," *Scientific Reports*, vol. 13, p. 22581, 2023.
+
+4. MediaPipe. "MediaPipe Pose." Google Developers. [Link](https://developers.google.com/mediapipe/solutions/vision/pose)
+
+5. J. Redmon, S. K. Divvala, R. B. Girshick, and A. Farhadi, "You Only Look Once: Unified, Real-Time Object Detection," in *Proc. IEEE CVPR*, 2016, pp. 779–788, DOI: 10.1109/CVPR.2016.91. [Link](https://ieeexplore.ieee.org/document/7780460)
 
 ---
 
