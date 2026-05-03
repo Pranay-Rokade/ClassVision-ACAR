@@ -4,13 +4,17 @@
 # ============================================================
 
 # ---- Stage 1: Build the React app ----
-FROM node:18-alpine AS build
+# Using node:18 (Debian) instead of Alpine to avoid rollup native binary issues on ARM64
+FROM node:18 AS build
 
 WORKDIR /app
 
 # Copy package files first for layer caching
 COPY package.json package-lock.json ./
-RUN npm ci
+
+# Delete lockfile and reinstall — the macOS-generated lockfile doesn't
+# include Linux ARM64 native binaries for rollup/vite.
+RUN rm -f package-lock.json && npm install
 
 # Copy all source code
 COPY . .
