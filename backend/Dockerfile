@@ -29,10 +29,10 @@ WORKDIR /app
 
 # ---- Python Dependencies ----
 # Copy requirements first for Docker layer caching
-COPY requriments.txt .
+COPY requirements.docker.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir gunicorn && \
-    pip install --no-cache-dir -r requriments.txt
+    pip install --no-cache-dir -r requirements.docker.txt
 
 # ---- Application Code ----
 COPY . .
