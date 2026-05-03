@@ -28,6 +28,7 @@ import {
 } from "recharts";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API_BASE from "../config";
 
 const Dashboard = () => {
   const [donoughtData, setDonoughtData] = useState([]);
@@ -46,7 +47,7 @@ const Dashboard = () => {
     let piedata = [];
     let linedata = [];
     axios
-      .get("http://127.0.0.1:8000/analysis/positive-negative-stats")
+      .get(`${API_BASE}/analysis/positive-negative-stats`)
       .then((response) => {
         const res = response.data;
         setDonoughtData([
@@ -55,7 +56,7 @@ const Dashboard = () => {
         ]);
 
         axios
-          .get("http://127.0.0.1:8000/analysis/activity-count")
+          .get(`${API_BASE}/analysis/activity-count`)
           .then((response) => {
             const res = response.data;
             bardata = Object.entries(res).map(([key, value]) => ({
@@ -66,7 +67,7 @@ const Dashboard = () => {
           });
 
         axios
-          .get("http://127.0.0.1:8000/analysis/percentage-of-actions")
+          .get(`${API_BASE}/analysis/percentage-of-actions`)
           .then((response) => {
             const res = response.data;
             piedata = Object.entries(res).map(([key, value]) => ({
@@ -77,7 +78,7 @@ const Dashboard = () => {
           });
 
         axios
-          .get("http://127.0.0.1:8000/analysis/activities-per-student")
+          .get(`${API_BASE}/analysis/activities-per-student`)
           .then((response) => {
             const res = response.data;
             linedata = Object.entries(res).map(([key, value]) => ({
@@ -88,7 +89,7 @@ const Dashboard = () => {
           });
 
         axios
-          .get("http://127.0.0.1:8000/analysis/kpis")
+          .get(`${API_BASE}/analysis/kpis`)
           .then((response) => {
             const res = response.data;
             setStudents(res.total_students);

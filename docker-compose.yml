@@ -1,0 +1,40 @@
+# ============================================================
+# ClassVision-ACAR — Docker Compose
+# Run the entire app with: docker-compose up --build
+# ============================================================
+
+version: "3.8"
+
+services:
+  # ---- Django Backend (ML + API) ----
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: classvision-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-classvision-secret-key-change-in-production}
+      - EMAIL_ID=${EMAIL_ID:-noreply@classvision.com}
+      - EMAIL_PASS=${EMAIL_PASS:-placeholder}
+      - DJANGO_ALLOWED_HOSTS=*
+      - DJANGO_DEBUG=False
+    volumes:
+      - backend_media:/app/media    # Persist uploaded & processed videos
+    restart: unless-stopped
+
+  # ---- React Frontend (Nginx) ----
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: classvision-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend_media:

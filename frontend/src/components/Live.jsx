@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import Button from "./Button"; // Assuming you have a Button component
 import axios from "axios";
+import API_BASE from "../config";
 
 const LiveMonitoring = () => {
   const [isStreaming, setIsStreaming] = useState(false);
@@ -9,7 +10,7 @@ const LiveMonitoring = () => {
   let mediaSource;
 
   // Backend URL for the live video stream
-  const backendUrl = "http://127.0.0.1:8000/classify/livevideo";
+  const backendUrl = `${API_BASE}/classify/livevideo`;
 
   // Start Video Streaming on Button Click
   const handleStartVideo = () => {
@@ -70,7 +71,7 @@ const LiveMonitoring = () => {
                       {/* Laptop Mockup */}
                       {/* Video Frame Display */}
                       {/* {console.log(live_stream_url)} */}
-                      <video src={"http://127.0.0.1:8000/classify/livevideo"} alt="Live Video"
+                      <video src={`${API_BASE}/classify/livevideo`} alt="Live Video"
                         className="w-full h-full border-2  rounded-lg border-gray-300 shadow-lg overflow-hidden " />
                       {/* <div className="w-full h-full bg-gray-700 rounded-lg overflow-hidden shadow-lg flex items-center justify-center">
                         <p className="text-2xl text-gray-300">

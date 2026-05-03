@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Button from './Button';
+import API_BASE from '../config';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 
@@ -42,7 +43,7 @@ const Upload2 = () => {
       }
 
       // Use Axios to send the request to your Django backend
-      const response = await axios.post('http://127.0.0.1:8000/classify/videoclassification', formData, {
+      const response = await axios.post(`${API_BASE}/classify/videoclassification`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

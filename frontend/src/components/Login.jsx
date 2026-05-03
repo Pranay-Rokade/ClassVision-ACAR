@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import { toast } from "react-toastify";
 import axios from "axios";
+import API_BASE from "../config";
 
 const InputField = ({ id, type, placeholder, value, onChange }) => {
     return (
@@ -53,7 +54,7 @@ const Login = () => {
     }
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/auth/login", data, {
+      const response = await axios.post(`${API_BASE}/auth/login`, data, {
         headers: {
           "Content-Type": "application/json",
         },

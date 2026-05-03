@@ -1,0 +1,5 @@
+.git
+*.md
+.env
+processed_video*.mp4
+ml/test3.mp4
